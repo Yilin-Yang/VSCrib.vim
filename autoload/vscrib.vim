@@ -235,7 +235,7 @@ function! vscrib#GetLaunchJSON(...) abort
   let l:launch_json = l:workspace.'/.vscode/launch.json'
 
   while !maktaba#path#Exists(l:launch_json)
-    if l:workspace ==# maktaba#path#RootCompnent(l:workspace)
+    if l:workspace ==# maktaba#path#RootComponent(l:workspace)
       throw maktaba#error#NotFound(
           \ 'Could not find working launch.json searching from: %s',
           \ s:vscode_variables['workspaceFolder'])
@@ -259,8 +259,10 @@ function! vscrib#GetLaunchJSON(...) abort
 
     let l:json = json_decode(join(l:contents, "\n"))
   catch /E484/  " Can't open file
+    let l:workspace = maktaba#path#Dirname(l:workspace)
     return vscrib#GetLaunchJSON(l:workspace)
   catch /E474/  " Failed to parse
+    let l:workspace = maktaba#path#Dirname(l:workspace)
     return vscrib#GetLaunchJSON(l:workspace)
   endtry
   return l:json
