@@ -66,5 +66,16 @@ Then:
     \ }
   call AssertDeepEquals(g:expected, g:actual)
 
+Execute (vscrib#GetLaunchJSON: No launch.json To Be Found):
+  execute 'cd '.g:test_directories.'/empty_grandparent/empty_parent/empty_child'
+  " hardcode the workspace folder, since FindWorkspace would also fail
+  let g:vars = vscrib#GetVariables(v:true)
+  let g:vars['workspaceFolder'] = 
+      \ g:test_directories.'/empty_grandparent/empty_parent/empty_child'
+Then:
+  AssertThrows call vscrib#GetLaunchJSON()
+  AssertEqual 0, match(g:vader_exception, '^ERROR(NotFound)'), 
+      \ 'Threw wrong exception: '.g:vader_exception
+
 Execute (vscrib#GetLaunchJSON: Clean Up):
   execute 'cd '.g:test_dir
