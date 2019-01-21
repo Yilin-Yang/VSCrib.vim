@@ -9,8 +9,10 @@ if !$VISIBLE
 endif
 set nocompatible
 filetype off
-set runtimepath+=.
-set runtimepath+=..
+let g:project_root = split(getcwd(), '/test')[0]
+let g:test_dir = g:project_root.'/test'
+execute 'set runtimepath+='.getcwd()
+execute 'set runtimepath+='.getcwd().'/..'
 set runtimepath+=vader.vim
 set runtimepath+=~/.vim/bundle/vader.vim
 set runtimepath+=vim-maktaba

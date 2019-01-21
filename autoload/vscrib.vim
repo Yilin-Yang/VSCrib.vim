@@ -27,17 +27,19 @@ let s:vscode_variables = {
 
 ""
 " Search upwards from the current directory to find a `.vscode` folder,
-" returning the absolute filepath of the folder containing `.vscode` if found.
+" returning the absolute filepath of the folder containing `.vscode` if found,
+" without trailing slash.
 "
-" {search_from} should be an absolute filepath.
+" {search_from} should be an absolute filepath to a directory.
 " @throws BadValue  If {search_from} isn't an absolute path.
 " @throws NotFound  If a `.vscode` folder could not be found.
 " @throws WrongType If {search_from} isn't a string.
 function! vscrib#FindWorkspace(search_from) abort
-  call maktaba#ensure#IsString(a:search_from)
-  let l:search_dir = maktaba#ensure#IsAbsolutePath(a:search_from)
+  call maktaba#ensure#IsAbsolutePath(a:search_from)
+  call maktaba#ensure#IsDirectory(a:search_from)
+  let l:search_dir = maktaba#path#StripTrailingSlash(a:search_from)
   let l:fpath = ''
-  let l:vscode_dir = '.vscode'
+  let l:vscode_dir = '/.vscode'
   while empty(l:fpath)
     if maktaba#path#Exists(l:search_dir . l:vscode_dir)
       let l:fpath = l:search_dir
@@ -51,6 +53,7 @@ function! vscrib#FindWorkspace(search_from) abort
           \ a:search_from)
     endif
   endwhile
+  return maktaba#path#StripTrailingSlash(l:fpath)
 endfunction
 
 ""

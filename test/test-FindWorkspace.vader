@@ -1,0 +1,26 @@
+Execute (vscrib#FindWorkspace: Setup):
+  let g:test_directories = g:test_dir.'/test_dirs'
+
+Execute (vscrib#FindWorkspace: In Current Directory):
+  AssertEqual g:test_directories.'/good_parent/good_child',
+      \ vscrib#FindWorkspace(g:test_directories.'/good_parent/good_child')
+
+Execute (vscrib#FindWorkspace: In Parent):
+  AssertEqual g:test_directories.'/good_parent',
+      \ vscrib#FindWorkspace(g:test_directories.'/good_parent/empty_child')
+
+Execute (vscrib#FindWorkspace: In Grandparent):
+  AssertEqual g:test_directories.'/good_grandparent',
+      \ vscrib#FindWorkspace(g:test_directories.'/good_grandparent/empty_parent/empty_child')
+
+Execute (vscrib#FindWorkspace: None to be Found):
+  AssertThrows call vscrib#FindWorkspace(
+      \ g:test_directories.'/empty_grandparent/empty_parent/empty_child')
+  AssertEqual 0, match(g:vader_exception, '^ERROR(NotFound)')
+
+Execute (vscrib#FindWorkspace: In Actual Current Working Directory):
+  cd test_dirs/good_parent/good_child
+  AssertEqual g:test_directories.'/good_parent/good_child',
+      \ vscrib#FindWorkspace(g:test_directories.'/good_parent/good_child')
+Then:
+  execute 'cd '.g:test_directories
