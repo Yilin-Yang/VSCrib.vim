@@ -11,7 +11,29 @@ Then:
       \ {
         \ 'type': 'node',
         \ 'request': 'launch',
-        \ 'name': 'Launch Program',
+        \ 'name': 'Launch Program, Good Parent, Good Child',
+        \ 'program': '${workspaceFolder}\build\src\index.js',
+        \ 'preLaunchTask': 'tsc: build - tsconfig.json',
+        \ 'outFiles': [
+          \ '${workspaceFolder}/build/**/*.js'
+        \ ]
+      \ }
+      \ ]
+    \ }
+  call AssertDeepEquals(g:expected, g:actual)
+
+Execute (vscrib#GetLaunchJSON: Empty Current, Good Parent):
+  execute 'cd '.g:test_directories.'/good_parent/empty_child'
+  call vscrib#SetVariables()
+  let g:actual = vscrib#GetLaunchJSON()
+Then:
+  let g:expected = {
+      \ 'version': '0.2.0',
+      \ 'configurations': [
+      \ {
+        \ 'type': 'node',
+        \ 'request': 'launch',
+        \ 'name': 'Launch Program, Good Parent',
         \ 'program': '${workspaceFolder}\build\src\index.js',
         \ 'preLaunchTask': 'tsc: build - tsconfig.json',
         \ 'outFiles': [
