@@ -1,0 +1,48 @@
+Execute (vscrib#StripComments: Empty String):
+  AssertEqual '', vscrib#StripComments('')
+
+Execute (vscrib#StripComments: Ordinary String):
+  AssertEqual 'abcd efgh', vscrib#StripComments('abcd efgh')
+
+Execute (vscrib#StripComments: Entire String is Comment):
+  AssertEqual '', vscrib#StripComments('// abcd efgh')
+
+Execute (vscrib#StripComments: Entire String is Comment, Leading Whitespace):
+  AssertEqual '', vscrib#StripComments("\t\t    // abcd efgh")
+
+Execute (vscrib#StripComments: Key-Value Pair with Comment):
+  AssertEqual '  "boo": 123, ', vscrib#StripComments('  "boo": 123, // abcd efgh')
+
+Execute (vscrib#StripComments: Opening Curly Brace with Comment):
+  AssertEqual '  { ', vscrib#StripComments('  { // abcd efgh')
+
+Execute (vscrib#StripComments: Closing Square Bracket with Comment):
+  AssertEqual '  ] ', vscrib#StripComments('  ] //')
+
+Execute (vscrib#StripComments: Comment Inside String Literal):
+  AssertEqual '"boo": "// comment in string literal"', 
+      \ vscrib#StripComments('"boo": "// comment in string literal"')
+
+Execute (vscrib#StripComments: Comment Inside String Literal, and Outside):
+  AssertEqual '"boo": "// comment in string literal" ', 
+      \ vscrib#StripComments('"boo": "// comment in string literal" // comment outside')
+
+Execute (vscrib#StripComments: Comment Inside String Literal, and Outside):
+  AssertEqual '"boo": "// comment in string literal" ', 
+      \ vscrib#StripComments('"boo": "// comment in string literal" // comment outside')
+
+Execute (vscrib#StripComments: Comment Inside String Literal with Escaped Quotes):
+  AssertEqual '"boo": " \"// comment in string literal"', 
+      \ vscrib#StripComments('"boo": " \"// comment in string literal"')
+
+Execute (vscrib#StripComments: Error Handling, Newline Characters):
+  AssertThrows call vscrib#StripComments("\"foo\": 123456, \n // abcd efgh")
+  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)')
+
+Execute (vscrib#StripComments: Error Handling, Carriage Returns):
+  AssertThrows call vscrib#StripComments("\"foo\": 123456, \r // abcd efgh")
+  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)')
+
+Execute (vscrib#StripComments: Error Handling, LF and CR):
+  AssertThrows call vscrib#StripComments("\"foo\": 123456, \r // abcd \nefgh")
+  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)')

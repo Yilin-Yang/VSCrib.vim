@@ -141,29 +141,83 @@ function! vscrib#SetVSCodeVariables(...) abort
 endfunction
 
 ""
-" Return the nearest `launch.json` file, parsed into a dictionary, using the
-" cached VSCode workspace variables.
+" Remove inline comments (e.g. `// this sort of comment`) from the given
+" string, if present, and return it.
+" @throws WrongType If not given a string.
+" @throws BadValue  If the given string contains newlines or carriage returns.
+function! vscrib#StripComments(line) abort
+  call maktaba#ensure#IsString(a:line)
+  if match(a:line, '^\s\{-}//') ==# 0
+    " entire line is a comment
+    return ''
+  endif
+  if match(a:line, '[\r\n]') !=# -1
+    throw maktaba#error#BadValue(
+        \ 'Given string contained CR and/or LF: %s', a:line)
+  endif
+
+  " check if file has inline code comments
+  " make sure that the '//' doesn't occur inside a string literal
+  let l:quote_stack = []
+  let l:comment_idx = -1
+  let l:i = 0 | while l:i <# len(a:line)
+    let l:char = a:line[l:i]
+    if l:char ==# '"'
+      if l:i !=# 0 && a:line[l:i - 1] ==# '\'
+        " escaped quote character, ignore
+      elseif empty(l:quote_stack) || l:quote_stack[-1] !=# l:char
+        call add(l:quote_stack, l:char)
+      else
+        unlet l:quote_stack[-1]  " pop matched quotation mark
+      endif
+    elseif l:char ==# '/'
+      if l:i ==# len(a:line) - 1
+        break  " line ended with (probably illegal) slash, but not comment
+      endif
+      if a:line[l:i + 1] ==# '/'
+        " found a //
+        if empty(l:quote_stack)
+          let l:comment_idx = l:i
+          break
+        else
+          " found a // inside a set of quotes
+          let l:i += 1  " skip the known / to follow
+        endif
+      endif
+    endif
+  let l:i += 1 | endwhile
+
+  if l:comment_idx ==# -1
+    return a:line
+  endif
+
+  return a:line[ : l:comment_idx - 1]
+endfunction
+
+""
+" Return the nearest `launch.json` file, parsed into a dictionary, searching
+" from [workspace_folder].
 "
 " If no `launch.json` file is found in the current workspace folder, will
 " search up to find the closest parent directory containing a
-" `.vscode/launch.json` file.
+" `.vscode/launch.json` file. If a `launch.json` file is found, but it cannot
+" be read or parsed, will continue searching upwards into parent directories.
 "
+" @default workspace_folder=The cached value of 'workspaceFolder'.
 " @throws NotFound    If no workspace folder is currently set; or if no `launch.json` file could be found in the current workspace folder, or any of its parent directories.
-" @throws IOError     If the found `launch.json` file could not be opened.
-" @throws ParseError  If the `launch.json` file could not be parsed.
-function! vscrib#GetLaunchJSON() abort
-  if empty(s:vscode_variables['workspaceFolder'])
-    throw maktaba#error#NotFound('workspaceFolder not set!')
+function! vscrib#GetLaunchJSON(...) abort
+  let l:workspace = get(a:, 0, s:vscode_variables['workspaceFolder'])
+  if empty(l:workspace)
+    throw maktaba#error#NotFound('workspaceFolder not set/given!')
   endif
 
-  let l:workspace =
-      \ maktaba#path#StripTrailingSlash(s:vscode_variables['workspaceFolder'])
+  let l:workspace = maktaba#path#StripTrailingSlash(l:workspace)
   let l:launch_json = l:workspace.'/.vscode/launch.json'
 
   while !maktaba#path#Exists(l:launch_json)
     if l:workspace ==# maktaba#path#RootCompnent(l:workspace)
       throw maktaba#error#NotFound(
-          \ 'Could not find launch.json searching from: %s',
+          \ 'Could not find working launch.json searching from: %s',
           \ s:vscode_variables['workspaceFolder'])
     endif
     let l:workspace = maktaba#path#Dirname(l:workspace)
@@ -172,13 +226,22 @@ function! vscrib#GetLaunchJSON() abort
 
   try
     let l:contents = readfile(l:launch_json)
+
+    " VSCode JSON files might include illegal comments; strip those
+    let l:i = len(l:contents) | while l:i >=# 0
+      let l:line = vscrib#StripComments(l:contents[l:i])
+      if empty(l:line)
+        unlet l:contents[l:i]
+      else
+        let l:contents[l:i] = l:line
+      endif
+    let l:i -= 1 | endwhile
+
     let l:json = json_decode(l:launch_json)
   catch /E484/  " Can't open file
-    throw maktaba#error#Exception(
-        \ 'IOError', 'Could not read file: %s', l:launch_json)
+    return vscrib#GetLaunchJSON(l:workspace)
   catch /E474/  " Failed to parse
-    throw maktaba#error#Exception(
-        \ 'ParseError', 'Could not parse JSON. Err: %s', v:exception)
+    return vscrib#GetLaunchJSON(l:workspace)
   endtry
   return l:json
 endfunction
