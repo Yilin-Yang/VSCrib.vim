@@ -51,11 +51,13 @@ VSCrib.vim uses [vader.vim](https://github.com/junegunn/vader.vim) as its
 testing framework. To run tests,
 
 ```bash
-# from project root,
+# from project root, with `vader.vim` installed,
 cd test
-./run_tests.sh [--vim|--neovim] [-v|--visible] [-f <TEST_FILE> | --file=<TEST_FILE>]
+./run_tests.sh
 ```
 
-For example, `./run_tests.sh --neovim -v` runs all tests in an interactive
-neovim instance. `./run_tests.sh -f test-Foo.vader` runs only `test-Foo.vader`
-in a "backgrounded" vim instance.
+See `./run_tests --help` for additional usage details.
+
+License
+--------------------------------------------------------------------------------
+MIT
