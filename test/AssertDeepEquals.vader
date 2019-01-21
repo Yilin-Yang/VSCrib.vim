@@ -1,0 +1,9 @@
+Execute (Declare AssertDeepEquals Helper):
+  function! AssertDeepEquals(expected, actual) abort
+    for [l:key, l:value] in items(a:expected)
+      Assert has_key(a:actual, l:key), 'Did not have key: '.l:key
+      AssertEqual a:expected[l:key], a:actual[l:key],
+          \ 'Equality comparison failed on key '.l:key.', expected: '
+          \ . a:expected[l:key].', actual: '.a:actual[l:key]
+    endfor
+  endfunction

@@ -1,9 +1,9 @@
 Include: AssertDeepEquals.vader
 
-Execute (vscrib#VariablesFrom: Setup):
+Execute (vscrib#SetVariables: Setup):
   let g:test_directories = g:test_dir.'/test_dirs'
-  
-Execute (vscrib#VariablesFrom: General Test):
+
+Execute (vscrib#SetVariables: General Test):
   let g:workspace_basename = 'good_parent'
   let g:workspace = g:test_directories.'/'.g:workspace_basename
   let g:cwd = g:test_directories.'/good_parent/empty_child'
@@ -12,9 +12,9 @@ Execute (vscrib#VariablesFrom: General Test):
   let g:filename_basename = g:filename_no_extension.g:filename_extension
   let g:file_dirname = g:test_directories.'/good_parent/empty_child'
   let g:filename = g:file_dirname.'/'.g:filename_basename
-  let g:curpos = [3, 1, 5, 10, 10]
-  let g:selection = ''
-  let g:vscode = '/bar/foo'
+  let g:curpos = [0, 1, 1, 0, 1]  " not sure why, but this is what it is?
+  let g:selection = ''  " NOTE: testing this with Vader is impractical
+  let g:vscode = '/NO_VSCODE_EXE_SPECIFIED'
   let g:expected = {
       \ 'workspaceFolder': g:workspace,
       \ 'workspaceFolderBasename': g:workspace_basename,
@@ -29,7 +29,12 @@ Execute (vscrib#VariablesFrom: General Test):
       \ 'selectedText': g:selection,
       \ 'execPath': g:vscode,
       \ }
+  execute 'cd '.g:test_directories.'/good_parent/empty_child'
+  edit blah.md
+  call vscrib#SetVariables()
 Then:
-  let g:actual = vscrib#VariablesFrom(
-       \ g:workspace, g:cwd, g:filename, g:curpos, g:selection, g:vscode)
+  let g:actual = vscrib#GetVariables(v:false)
   call AssertDeepEquals(g:expected, g:actual)
+
+Execute (vscrib#SetVariables: Clean Up):
+  execute 'cd '.g:test_dir

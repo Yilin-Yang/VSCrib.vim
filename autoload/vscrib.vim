@@ -126,21 +126,37 @@ endfunction
 " @throws NotFound  If no VSCode workspace folder could be found.
 " @throws WrongType If [relative_to] or [vscode_exe ]aren't strings.
 " @throws BadValue  If [relative_to] or [vscode_exe] aren't a directory and a file, respectively; or if either is not an absolute filepath.
-function! vscrib#SetVSCodeVariables(...) abort
-  let a:relative_to = get(a:, 0, getcwd())
+function! vscrib#SetVariables(...) abort
+  let a:relative_to = get(a:000, 0, getcwd())
   call maktaba#ensure#IsDirectory(a:relative_to)
   call maktaba#ensure#IsAbsolutePath(a:relative_to)
 
-  let a:vscode_exe = get(a:, 1, '/NO_VSCODE_EXE_SPECIFIED')
-  call maktaba#ensure#IsFile(a:vscode_exe)
-  call maktaba#ensure#IsAbsolutePath(a:vscode_exe)
+  let a:vscode_exe = get(a:000, 1, '/NO_VSCODE_EXE_SPECIFIED')
+  try
+    call maktaba#ensure#IsFile(a:vscode_exe)
+    call maktaba#ensure#IsAbsolutePath(a:vscode_exe)
+  catch /ERROR(NotFound)/
+    " should be string, but IsFile already invokes IsString
+  endtry
 
   let l:workspace = vscrib#FindWorkspace(a:relative_to)
 
   let s:vscode_variables = vscrib#VariablesFrom(
       \ l:workspace, a:relative_to, expand('%:p'), getcurpos(),
-      \ maktaba#buffer#GetVisualSelection(),
+      \ maktaba#buffer#GetVisualSelection(), a:vscode_exe
       \ )
+endfunction
+
+""
+" Returns the currently cached VSCode task/debugging variables; if [mutable]
+" is true, returns a mutable reference to the cache instead of a deep copy.
+" @throws WrongType If [mutable] is not a boolean value.
+function! vscrib#GetVariables(...) abort
+  let a:mutable = get(a:000, 0, v:false)
+  if type(a:mutable) !=# v:t_bool && !maktaba#value#IsNumber(a:mutable)
+    throw maktaba#error#WrongType('Did not receive a boolean.')
+  endif
+  return a:mutable ? s:vscode_variables : deepcopy(s:vscode_variables)
 endfunction
 
 ""
@@ -209,7 +225,7 @@ endfunction
 " @default workspace_folder=The cached value of 'workspaceFolder'.
 " @throws NotFound    If no workspace folder is currently set; or if no `launch.json` file could be found in the current workspace folder, or any of its parent directories.
 function! vscrib#GetLaunchJSON(...) abort
-  let l:workspace = get(a:, 0, s:vscode_variables['workspaceFolder'])
+  let l:workspace = get(a:000, 0, s:vscode_variables['workspaceFolder'])
   if empty(l:workspace)
     throw maktaba#error#NotFound('workspaceFolder not set/given!')
   endif
