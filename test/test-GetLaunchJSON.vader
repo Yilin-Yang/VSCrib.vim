@@ -44,7 +44,7 @@ Then:
     \ }
   call AssertDeepEquals(g:expected, g:actual)
 
-Execute (vscrib#GetLaunchJSON: Bad Current, Good Parent):
+Execute (vscrib#GetLaunchJSON: Bad Current, Empty Parent, Good Grandparent):
   execute 'cd '.g:test_directories.'/good_grandparent/empty_parent/bad_child'
   call vscrib#SetVariables()
   let g:actual = vscrib#GetLaunchJSON()
