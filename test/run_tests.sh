@@ -26,7 +26,8 @@ RUN_VIM=1
 VISIBLE=0
 VADER_CMD="-c 'Vader!"
 TEST_PAT=" test-*.vader'"
-for ARG in "$@"; do
+while [[ $# -gt 0 ]]; do
+  ARG=$1
   case $ARG in
     '-i' | '--international')
       TEST_INTERNATIONAL=1
@@ -47,8 +48,8 @@ for ARG in "$@"; do
       TEST_PAT="${ARG#*=}'"
       ;;
     "-f")
-      shift
-      TEST_PAT="${ARG#*=}'"
+      TEST_PAT="$2'"
+      shift  # past pattern
       ;;
     "-h")
       printUsage
@@ -58,8 +59,9 @@ for ARG in "$@"; do
       printUsage
       exit 0
       ;;
-    esac
-  done
+  esac
+  shift
+done
 export IS_VSCRIB_DEBUG=1
 
 set -p
