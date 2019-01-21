@@ -37,12 +37,15 @@ Execute (vscrib#StripComments: Comment Inside String Literal with Escaped Quotes
 
 Execute (vscrib#StripComments: Error Handling, Newline Characters):
   AssertThrows call vscrib#StripComments("\"foo\": 123456, \n // abcd efgh")
-  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)')
+  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)'), 
+      \ 'Threw wrong exception: '.g:vader_exception
 
 Execute (vscrib#StripComments: Error Handling, Carriage Returns):
   AssertThrows call vscrib#StripComments("\"foo\": 123456, \r // abcd efgh")
-  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)')
+  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)'),
+      \ 'Threw wrong exception: '.g:vader_exception
 
 Execute (vscrib#StripComments: Error Handling, LF and CR):
   AssertThrows call vscrib#StripComments("\"foo\": 123456, \r // abcd \nefgh")
-  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)')
+  AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)'),
+      \ 'Threw wrong exception: '.g:vader_exception
