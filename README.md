@@ -19,3 +19,7 @@ Plug 'Yilin-Yang/VSCrib.vim'
 " ...
 call plug#end()
 ```
+
+Contribution
+--------------------------------------------------------------------------------
+Documentation is generated using [vimdoc.](https://github.com/google/vimdoc)
