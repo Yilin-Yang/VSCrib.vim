@@ -20,10 +20,20 @@ printUsage() {
   printf "\t-f <PAT>, --file=<PAT>   Run only tests globbed (matched) by <PAT>\n"
 }
 
+runAndExitOnFail() {
+  COMMAND=$1
+  echo "$COMMAND"
+  eval "$COMMAND"
+  if [[ $? -ne 0 ]]; then
+    echo "Command failed!"
+    exit 1
+  fi
+}
+
 BASE_CMD_NVIM="nvim --headless -Nnu .test_vimrc -i NONE"
 BASE_CMD_VIM="vim -Nnu .test_vimrc -i NONE"
 RUN_VIM=1
-VISIBLE=0
+export VISIBLE=0
 VADER_CMD="-c 'Vader!"
 TEST_PAT=" test-*.vader'"
 while [[ $# -gt 0 ]]; do
@@ -33,7 +43,7 @@ while [[ $# -gt 0 ]]; do
       TEST_INTERNATIONAL=1
       ;;
     '-v' | '--visible')
-      VISIBLE=1
+      export VISIBLE=1
       BASE_CMD_NVIM="nvim -Nnu .test_vimrc -i NONE"
       BASE_CMD_VIM="vim -Nnu .test_vimrc -i NONE"
       VADER_CMD="-c 'Vader"
@@ -74,12 +84,12 @@ if [ $RUN_VIM -ne 0 ]; then
 else
   BASE_CMD=$BASE_CMD_NVIM
 fi
-echo "${BASE_CMD} ${VADER_CMD} ${TEST_PAT}"
-eval "${BASE_CMD} ${VADER_CMD} ${TEST_PAT}"
+runAndExitOnFail "${BASE_CMD} ${VADER_CMD} ${TEST_PAT}"
 
 if [ $TEST_INTERNATIONAL ]; then
   # test non-English locale
-  eval "${BASE_CMD} -c 'language de_DE.utf8' ${VADER_CMD} ${TEST_PAT}"
-  eval "${BASE_CMD} -c 'language es_ES.utf8' ${VADER_CMD} ${TEST_PAT}"
+  runAndExitOnFail "${BASE_CMD} -c 'language de_DE.utf8' ${VADER_CMD} ${TEST_PAT}"
+  runAndExitOnFail "${BASE_CMD} -c 'language es_ES.utf8' ${VADER_CMD} ${TEST_PAT}"
 fi
 unset IS_VSCRIB_DEBUG
+unset VISIBLE
