@@ -1,0 +1,38 @@
+Execute (vscrib#VariablesFrom: Setup):
+  let g:test_directories = g:test_dir.'/test_dirs'
+  
+Execute (vscrib#VariablesFrom: General Test):
+  let g:workspace_basename = 'good_parent'
+  let g:workspace = g:test_directories.'/'.g:workspace_basename
+  let g:cwd = g:test_directories.'/good_parent/empty_child'
+  let g:filename_no_extension = 'blah'
+  let g:filename_extension = '.md'
+  let g:filename_basename = g:filename_no_extension.g:filename_extension
+  let g:file_dirname = g:test_directories.'/good_parent/empty_child'
+  let g:filename = g:file_dirname.'/'.g:filename_basename
+  let g:curpos = [3, 1, 5, 10, 10]
+  let g:selection = ''
+  let g:vscode = '/bar/foo'
+  let g:expected = {
+      \ 'workspaceFolder': g:workspace,
+      \ 'workspaceFolderBasename': g:workspace_basename,
+      \ 'file': g:filename,
+      \ 'relativeFile': 'empty_child/blah.md',
+      \ 'fileBasename': g:filename_basename,
+      \ 'fileBasenameNoExtension': g:filename_no_extension,
+      \ 'fileDirname': g:file_dirname,
+      \ 'fileExtname': g:filename_extension,
+      \ 'cwd': g:cwd,
+      \ 'lineNumber': g:curpos[1],
+      \ 'selectedText': '',
+      \ 'execPath': g:vscode,
+      \ }
+Then:
+  let g:actual = vscrib#VariablesFrom(
+       \ g:workspace, g:cwd, g:filename, g:curpos, g:selection, g:vscode)
+  for [g:key, g:value] in items(g:expected)
+    Assert has_key(g:actual, g:key), 'Did not have key: '.g:key
+    AssertEqual g:expected[g:key], g:actual[g:key],
+        \ 'Equality comparison failed on key '.g:key.', expected: '
+        \ . g:expected[g:key].', actual: '.g:actual[g:key]
+  endfor

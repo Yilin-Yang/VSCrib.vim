@@ -77,11 +77,11 @@ endfunction
 function! vscrib#VariablesFrom(
     \ workspace, cwd, file, curpos, selection, vscode) abort
   call maktaba#ensure#IsAbsolutePath(a:workspace)
-  call maktaba#ensuire#IsDirectory(a:workspace)
+  call maktaba#ensure#IsDirectory(a:workspace)
   call maktaba#ensure#IsAbsolutePath(a:cwd)
-  call maktaba#ensuire#IsDirectory(a:cwd)
+  call maktaba#ensure#IsDirectory(a:cwd)
   call maktaba#ensure#IsAbsolutePath(a:file)
-  call maktaba#ensuire#IsFile(a:file)
+  call maktaba#ensure#IsFile(a:file)
   call maktaba#ensure#IsList(a:curpos)
   call maktaba#ensure#IsString(a:selection)
   call maktaba#ensure#IsString(a:vscode)
@@ -90,7 +90,7 @@ function! vscrib#VariablesFrom(
   let l:file_basename_split_on_period = split(l:file_basename, '\.')
   let l:file_extname = ''
   if len(l:file_basename_split_on_period) !=# 1
-    let l:file_extname = l:file_basename_split_on_period[-1]
+    let l:file_extname = '.'.l:file_basename_split_on_period[-1]
     unlet l:file_basename_split_on_period[-1]
   endif
   let l:file_basename_no_extension = join(l:file_basename_split_on_period, '.')
@@ -100,7 +100,7 @@ function! vscrib#VariablesFrom(
       \ 'workspaceFolderBasename':
           \ maktaba#path#Basename(maktaba#path#StripTrailingSlash(a:workspace)),
       \ 'file': a:file,
-      \ 'relativeFile': maktaba#path#MakeRelative(a:cwd, a:file),
+      \ 'relativeFile': maktaba#path#MakeRelative(a:workspace, a:file),
       \ 'fileBasename': maktaba#path#Basename(a:file),
       \ 'fileBasenameNoExtension': l:file_basename_no_extension,
       \ 'fileDirname': maktaba#path#Dirname(a:file),
