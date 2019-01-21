@@ -1,9 +1,42 @@
 Execute (Declare AssertDeepEquals Helper):
+  function! StrDump(var) abort
+    let l:dump = ''
+    redir => l:dump
+      silent! echo a:var
+    redir end
+    return l:dump
+  endfunction
+
+  function! FailedComparison(key, expected, actual, full_actual, message) abort
+    return a:message. ' on key: '''.a:key.''', expected: '
+          \ . StrDump(a:expected).', actual: '.StrDump(a:actual)
+          \ . ', full actual: ' . StrDump(a:full_actual)
+  endfunction
+
   function! AssertDeepEquals(expected, actual) abort
     for [l:key, l:value] in items(a:expected)
       Assert has_key(a:actual, l:key), 'Did not have key: '.l:key
-      AssertEqual a:expected[l:key], a:actual[l:key],
-          \ 'Equality comparison failed on key '.l:key.', expected: '
-          \ . a:expected[l:key].', actual: '.a:actual[l:key]
+      let l:exp = a:expected[l:key]
+      let l:act = a:actual[l:key]
+      AssertEqual type(l:exp), type(l:act),
+          \ FailedComparison(l:key, l:exp, l:act, a:actual, 'Type mismatch')
+      if type(l:exp) ==# v:t_dict
+        call AssertDeepEquals(l:exp, l:act)
+      elseif type(l:exp) ==# v:t_list
+        let l:i = 0 | while l:i <# len(l:exp)
+          let l:list_exp = l:exp[l:i]
+          let l:list_act = l:act[l:i]
+          if type(l:list_exp) ==# v:t_dict || type(l:list_exp) ==# v:t_list
+            call AssertDeepEquals(l:list_exp, l:list_act)
+          else
+            AssertEqual l:list_exp, l:list_act, 
+                \ FailedComparison(l:i, l:exp[l:i], l:act[l:i], 
+                \ l:act, 'List item equality failed')
+          endif
+        let l:i += 1 | endwhile
+      else
+        AssertEqual a:expected[l:key], a:actual[l:key], 
+            \ FailedComparison(l:key, l:exp, l:act, a:actual, 'Equality failed')
+      endif
     endfor
   endfunction
