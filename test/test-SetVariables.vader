@@ -36,5 +36,38 @@ Then:
   let g:actual = vscrib#GetVariables(v:false)
   call AssertDeepEquals(g:expected, g:actual)
 
+Execute (vscrib#SetVariables: Good CWD):
+  let g:workspace_basename = 'good_child'
+  let g:workspace = g:test_directories.'/good_parent/'.g:workspace_basename
+  let g:cwd = g:test_directories.'/good_parent/good_child'
+  let g:filename_no_extension = 'blah'
+  let g:filename_extension = '.md'
+  let g:filename_basename = g:filename_no_extension.g:filename_extension
+  let g:file_dirname = g:test_directories.'/good_parent/good_child'
+  let g:filename = g:file_dirname.'/'.g:filename_basename
+  let g:curpos = [0, 1, 1, 0, 1]  " not sure why, but this is what it is?
+  let g:selection = ''  " NOTE: testing this with Vader is impractical
+  let g:vscode = '/NO_VSCODE_EXE_SPECIFIED'
+  let g:expected = {
+      \ 'workspaceFolder': g:workspace,
+      \ 'workspaceFolderBasename': g:workspace_basename,
+      \ 'file': g:filename,
+      \ 'relativeFile': 'blah.md',
+      \ 'fileBasename': g:filename_basename,
+      \ 'fileBasenameNoExtension': g:filename_no_extension,
+      \ 'fileDirname': g:file_dirname,
+      \ 'fileExtname': g:filename_extension,
+      \ 'cwd': g:cwd,
+      \ 'lineNumber': g:curpos[1],
+      \ 'selectedText': g:selection,
+      \ 'execPath': g:vscode,
+      \ }
+  execute 'cd '.g:test_directories.'/good_parent/good_child'
+  edit blah.md
+  call vscrib#SetVariables()
+Then:
+  let g:actual = vscrib#GetVariables(v:false)
+  call AssertDeepEquals(g:expected, g:actual)
+
 Execute (vscrib#SetVariables: Clean Up):
   execute 'cd '.g:test_dir
