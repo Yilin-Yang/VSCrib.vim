@@ -1,0 +1,19 @@
+" Minimal local .vimrc, for use when running test cases.
+"-------------------------------------------------------
+" Adapted from:
+"   https://github.com/junegunn/vader.vim
+"----------------------------------------
+if !$VISIBLE
+  set lines=64
+  set columns=256
+endif
+set nocompatible
+filetype off
+set runtimepath+=.
+set runtimepath+=..
+set runtimepath+=vader.vim
+set runtimepath+=~/.vim/bundle/vader.vim
+filetype plugin indent on
+syntax enable
+set autoread
+set hidden
