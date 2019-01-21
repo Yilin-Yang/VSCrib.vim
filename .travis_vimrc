@@ -11,6 +11,7 @@ set nocompatible
 filetype off
 let g:project_root = split(getcwd(), '/test')[0]
 let g:test_dir = g:project_root.'/test'
+let g:test_directories = g:test_dir.'/test_dirs'
 execute 'set runtimepath+='.getcwd()
 execute 'set runtimepath+='.getcwd().'/..'
 set runtimepath+=vader.vim

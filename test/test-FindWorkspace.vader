@@ -1,6 +1,3 @@
-Execute (vscrib#FindWorkspace: Setup):
-  let g:test_directories = g:test_dir.'/test_dirs'
-
 Execute (vscrib#FindWorkspace: In Current Directory):
   AssertEqual g:test_directories.'/good_parent/good_child',
       \ vscrib#FindWorkspace(g:test_directories.'/good_parent/good_child')

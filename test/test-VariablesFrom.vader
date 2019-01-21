@@ -1,8 +1,5 @@
 Include: AssertDeepEquals.vader
 
-Execute (vscrib#VariablesFrom: Setup):
-  let g:test_directories = g:test_dir.'/test_dirs'
-  
 Execute (vscrib#VariablesFrom: General Test):
   let g:workspace_basename = 'good_parent'
   let g:workspace = g:test_directories.'/'.g:workspace_basename
