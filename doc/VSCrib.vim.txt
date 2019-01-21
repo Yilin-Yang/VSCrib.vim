@@ -1,0 +1,82 @@
+*VSCrib.vim.txt*	Crib project infrastructure from VSCode.
+Yilin Yang <yiliny@umich.edu>                        *VSCrib.vim* *VSCrib.vim*
+
+==============================================================================
+CONTENTS                                                 *VSCrib.vim-contents*
+  1. Introduction...........................................|VSCrib.vim-intro|
+  2. Functions..........................................|VSCrib.vim-functions|
+
+==============================================================================
+INTRODUCTION                                                *VSCrib.vim-intro*
+
+A VimL library for for cribbing project infrastructure used by VSCode and
+twisting it to one's own nefarious ends.
+
+The primary purpose of this plugin is to locate `.vscode` folders and the JSON
+configuration files held within. This allows for a limited degree of 'letting
+vim pretend to be VSCode' for the purposes of writing plugins.
+
+==============================================================================
+FUNCTIONS                                               *VSCrib.vim-functions*
+
+vscrib#FindWorkspace({search_from})                   *vscrib#FindWorkspace()*
+  Search upwards from the current directory to find a `.vscode` folder,
+  returning the absolute filepath of the folder containing `.vscode` if found.
+
+  {search_from} should be an absolute filepath.
+  Throws ERROR(BadValue) If {search_from} isn't an absolute path.
+  Throws ERROR(NotFound) If a `.vscode` folder could not be found.
+  Throws ERROR(WrongType) If {search_from} isn't a string.
+
+vscrib#VariablesFrom({workspace}, {cwd}, {file}, {curpos}, {selection},
+  {vscode})                                           *vscrib#VariablesFrom()*
+  Returns a dictionary of what the VSCode task/debugging variables would be,
+  using the arguments given.
+
+  {workspace} The absolute path to the workspace folder.
+
+  {cwd}       The absolute path to the current working directory.
+
+  {file}      The absolute path of the file currently open.
+
+  {curpos}    The position of the cursor, as returned by `getcurpos()`.
+
+  {selection} The current visual section.
+
+  {vscode}    An absolute path to a VSCode executable, or garbage.
+
+  Throws ERROR(BadValue) If paths given are not absolute paths.
+  Throws ERROR(WrongType) If arguments given are of the wrong type.
+
+vscrib#SetVSCodeVariables([relative_to], [vscode_exe])
+                                                 *vscrib#SetVSCodeVariables()*
+  Updates the VSCode task/debugging variables cache, searching from the given
+  directory (by default, the current working directory).
+
+  [relative_to] is an absolute path to a directory, from which to start
+  searching for a `.vscode` folder. [vscode_exe]  is an absolute path to a
+  VSCode executable, or garbage.
+
+  [relative_to] is getcwd() if omitted.
+  [vscode_exe] is 'NO_VSCODE_EXE_SPECIFIED' if omitted.
+  Throws ERROR(NotFound) If no VSCode workspace folder could be found.
+  Throws ERROR(WrongType) If [relative_to] or [vscode_exe ]aren't strings.
+  Throws ERROR(BadValue) If [relative_to] or [vscode_exe] aren't a directory
+  and a file, respectively; or if either is not an absolute filepath.
+
+vscrib#GetLaunchJSON()                                *vscrib#GetLaunchJSON()*
+  Return the nearest `launch.json` file, parsed into a dictionary, using the
+  cached VSCode workspace variables.
+
+  If no `launch.json` file is found in the current workspace folder, will
+  search up to find the closest parent directory containing a
+  `.vscode/launch.json` file.
+
+  Throws ERROR(NotFound) If no workspace folder is currently set; or if no
+  `launch.json` file could be found in the current workspace folder, or any of
+  its parent directories.
+  Throws ERROR(IOError) If the found `launch.json` file could not be opened.
+  Throws ERROR(ParseError) If the `launch.json` file could not be parsed.
+
+
+vim:tw=78:ts=8:ft=help:norl:

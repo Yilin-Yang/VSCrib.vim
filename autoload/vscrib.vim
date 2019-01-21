@@ -58,11 +58,17 @@ endfunction
 " using the arguments given.
 "
 " {workspace} The absolute path to the workspace folder.
+"
 " {cwd}       The absolute path to the current working directory.
+"
 " {file}      The absolute path of the file currently open.
+"
 " {curpos}    The position of the cursor, as returned by `getcurpos()`.
+"
 " {selection} The current visual section.
+"
 " {vscode}    An absolute path to a VSCode executable, or garbage.
+"
 " @throws BadValue  If paths given are not absolute paths.
 " @throws WrongType If arguments given are of the wrong type.
 function! vscrib#VariablesFrom(
@@ -116,8 +122,7 @@ endfunction
 " @default vscode_exe='NO_VSCODE_EXE_SPECIFIED'
 " @throws NotFound  If no VSCode workspace folder could be found.
 " @throws WrongType If [relative_to] or [vscode_exe ]aren't strings.
-" @throws BadValue  If [relative_to] or [vscode_exe] aren't a directory and a
-"     file, respectively; or if either is not an absolute filepath.
+" @throws BadValue  If [relative_to] or [vscode_exe] aren't a directory and a file, respectively; or if either is not an absolute filepath.
 function! vscrib#SetVSCodeVariables(...) abort
   let a:relative_to = get(a:, 0, getcwd())
   call maktaba#ensure#IsDirectory(a:relative_to)
@@ -143,9 +148,7 @@ endfunction
 " search up to find the closest parent directory containing a
 " `.vscode/launch.json` file.
 "
-" @throws NotFound    If no workspace folder is currently set; or if no
-"     `launch.json` file could be found in the current workspace folder, or
-"     any of its parent directories.
+" @throws NotFound    If no workspace folder is currently set; or if no `launch.json` file could be found in the current workspace folder, or any of its parent directories.
 " @throws IOError     If the found `launch.json` file could not be opened.
 " @throws ParseError  If the `launch.json` file could not be parsed.
 function! vscrib#GetLaunchJSON() abort
