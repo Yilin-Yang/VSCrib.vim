@@ -81,7 +81,8 @@ function! vscrib#VariablesFrom(
   call maktaba#ensure#IsAbsolutePath(a:cwd)
   call maktaba#ensure#IsDirectory(a:cwd)
   call maktaba#ensure#IsAbsolutePath(a:file)
-  call maktaba#ensure#IsFile(a:file)
+  " call maktaba#ensure#IsFile(a:file)  " might be a nofile buffer
+  call maktaba#ensure#IsString(a:file)
   call maktaba#ensure#IsList(a:curpos)
   call maktaba#ensure#IsString(a:selection)
   call maktaba#ensure#IsString(a:vscode)
@@ -247,7 +248,7 @@ function! vscrib#GetLaunchJSON(...) abort
     let l:contents = readfile(l:launch_json)
 
     " VSCode JSON files might include illegal comments; strip those
-    let l:i = len(l:contents) | while l:i >=# 0
+    let l:i = len(l:contents) - 1 | while l:i >=# 0 && !empty(l:contents)
       let l:line = vscrib#StripComments(l:contents[l:i])
       if empty(l:line)
         unlet l:contents[l:i]
@@ -256,7 +257,7 @@ function! vscrib#GetLaunchJSON(...) abort
       endif
     let l:i -= 1 | endwhile
 
-    let l:json = json_decode(l:launch_json)
+    let l:json = json_decode(join(l:contents, "\n"))
   catch /E484/  " Can't open file
     return vscrib#GetLaunchJSON(l:workspace)
   catch /E474/  " Failed to parse
