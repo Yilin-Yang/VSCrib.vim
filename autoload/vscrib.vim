@@ -267,3 +267,61 @@ function! vscrib#GetLaunchJSON(...) abort
   endtry
   return l:json
 endfunction
+
+""
+" Perform VSCode's task/debugging variable substitution on {line} and return it.
+"
+" Prompts for user input, if [no_interactive] is set to false.
+"
+" @throws WrongType If {line} is not a string.
+" @throws BadValue  If the line contains malformed or unrecognized variables, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string.
+function! vscrib#Substitute(line, ...) abort
+  let a:no_interactive = get(a:000, 0, v:false)
+  let l:line = maktaba#ensure#IsString(a:line)
+
+  let l:vars = []  " list of all variables to substitute
+  let l:var = matchstr(l:line, s:var_search_pat) | while !empty(l:line)
+    call add(l:vars, l:var)
+    let l:first_after = matchend(l:line, s:var_search_pat)
+    let l:line = l:line[l:first_after : ]
+  let l:var = matchstr(l:line, s:var_search_pat) | endwhile
+
+  let l:vscode_vars = vscrib#GetVariables(v:false)
+  let l:sub_vals = []
+  for l:var in l:vars
+    if has_key(l:vscode_vars, l:var)
+      call add(l:sub_vals, l:vscode_vars['l:var'])
+    elseif match(l:var, s:env_search_pat) !=# -1
+      let l:env = l:var[matchend(l:var, s:env_search_pat) : -1]
+      execute 'call add(l:sub_vals, $'.l:env.')'
+    elseif match(l:var, s:prompt_search_pat)
+      if a:no_interactive
+        throw maktaba#error#BadValue(
+            \ 'Substitution would prompt for user input: %s', l:var)
+      endif
+      let l:prompt_msg = l:var[matchend(l:var, s:prompt_search_pat) : -1]
+      call inputsave()
+      let l:input = input(l:prompt_msg.': ',
+        \ '',
+        \ 'file'
+        \ )
+      call inputrestore()
+      call add(l:sub_vals, l:input)
+    else
+      throw maktaba#error#NotImplemented(
+          \ 'VSCode dynamic variables not yet supported: %s', l:var)
+    endif
+  endfor
+
+  let l:line = a:line  " reset to original value
+  let l:i = 0 | while l:i <# len(l:vars)
+    let l:var = l:vars[l:i]
+    let l:sub = l:sub_vals[l:i]
+    call substitute(l:line, l:var, l:sub, '')
+  let l:i += 1 | endwhile
+
+  return l:line
+endfunction
+let s:var_search_pat = '${.\{-}}'
+let s:env_search_pat = '^${env:'
+let s:prompt_search_pat = '^${prompt:'
