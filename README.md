@@ -1,4 +1,4 @@
-VSCrib.vim [ALPHA]
+VSCrib.vim [ALPHA] [![Build Status](https://travis-ci.com/Yilin-Yang/VSCrib.vim.svg?branch=master)](https://travis-ci.com/Yilin-Yang/VSCrib.vim)
 ================================================================================
 A VimL library for cribbing project infrastructure and workspace configurations
 from VSCode.
@@ -21,9 +21,7 @@ Prerequisites
 --------------------------------------------------------------------------------
 VSCrib.vim requires at least [Vim 7.4.1304](https://github.com/vim/vim/commit/7823a3bd2eed6ff9e544d201de96710bd5344aaf)
 or [practically any recent version of neovim.](https://github.com/neovim/neovim/commit/4dcd19d9bc2417051ddbda177010ca8c0cb2cf73)
-
-In practice, VSCrib.vim is primarily developed using neovim 0.3.4+, with only
-limited testing on Vim 7.X. If you encounter problems, they might be fixed by
+If you encounter problems while using Vim 7.4.X, they might be fixed by
 upgrading to a newer version of Vim, but please do [open an Issue](https://github.com/Yilin-Yang/VSCrib.vim/issues)
 as well.
 
