@@ -74,6 +74,7 @@ endfunction
 "
 " @throws BadValue  If paths given are not absolute paths.
 " @throws WrongType If arguments given are of the wrong type.
+" @private
 function! vscrib#VariablesFrom(
     \ workspace, cwd, file, curpos, selection, vscode) abort
   call maktaba#ensure#IsAbsolutePath(a:workspace)
@@ -116,7 +117,8 @@ endfunction
 
 ""
 " Updates the VSCode task/debugging variables cache, searching from the given
-" directory (by default, the current working directory).
+" directory (by default, the current working directory). Returns a deep copy
+" of the updated cache.
 "
 " [relative_to] is an absolute path to a directory, from which to start
 "     searching for a `.vscode` folder.
@@ -146,6 +148,8 @@ function! vscrib#SetVariables(...) abort
       \ l:workspace, a:relative_to, expand('%:p'), getcurpos(),
       \ maktaba#buffer#GetVisualSelection(), a:vscode_exe
       \ )
+
+  return deepcopy(s:vscode_variables)
 endfunction
 
 ""
@@ -271,9 +275,22 @@ endfunction
 ""
 " Perform VSCode's task/debugging variable substitution on {line} and return it.
 "
-" Silently ignores unrecognized variables if [ignore_unrecognized] is true.
+" Uses currently cached variables if [variables] is an empty dictionary;
+" otherwise, uses the dictionary given. This should be a dictionary returned
+" by a call to @function(SetVariables) or @function(GetVariables).
 "
-" Prompts for user input, if [no_interactive] is set to false.
+" As of the time of writing, this function does NOT support substitution of
+" VSCode settings and commands, e.g. `${config:editor.fontSize}` or
+" `${command.explorer.newFolder}`. Attempted substitution of these variables
+" will produce errors, unless [ignore_unrecognized] is true.
+"
+" VSCode normally offers 'input' variables (see: https://code.visualstudio.com/docs/editor/variables-reference)
+" that allow tasks and launch configurations to prompt for user input, e.g.
+" for the name of the executable to debug. This function offers limited
+" support for user input: variables of the form `${prompt:Message goes here}`
+" will, if [no_interactive] is set to false, prompt the user for input using
+" vim's `input()` function. (In this case, the prompt would be: 'Message goes
+" here: <CURSOR>', with `<CURSOR>` being the position of the user's cursor.)
 "
 " Does not invoke `inputsave()` or `inputrestore()` if [no_inputsave] is set
 " to true. This is useful when automatically supplying answers to interactive
@@ -285,9 +302,13 @@ endfunction
 " @throws WrongType If {line} is not a string.
 " @throws BadValue  If the line contains malformed variables, OR if the line contains unrecognized variables and [ignore_unrecognized] is false, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
 function! vscrib#Substitute(line, ...) abort
-  let a:ignore_unrecognized = get(a:000, 0, v:false)
-  let a:no_interactive = get(a:000, 1, v:false)
-  let a:no_inputsave = get(a:000, 2, v:false)
+  let a:variables = maktaba#ensure#IsDict(get(a:000, 0, {}))
+  if empty(a:variables)
+    let a:variables = vscrib#GetVariables()
+  endif
+  let a:ignore_unrecognized = get(a:000, 1, v:false)
+  let a:no_interactive = get(a:000, 2, v:false)
+  let a:no_inputsave = get(a:000, 3, v:false)
   let l:line = maktaba#ensure#IsString(a:line)
 
   call maktaba#ensure#IsIn(a:ignore_unrecognized, [v:true, v:false, 1, 0])
@@ -301,13 +322,12 @@ function! vscrib#Substitute(line, ...) abort
     let l:line = l:line[l:first_after : ]
   let l:var = matchstr(l:line, s:var_search_pat) | endwhile
 
-  let l:vscode_vars = vscrib#GetVariables(v:false)
   let l:sub_vals = []
   let l:i = 0 | while l:i <# len(l:vars)
     let l:var = l:vars[l:i]
     let l:var_no_braces = l:var[2:-2]  " trim ${ and }
-    if has_key(l:vscode_vars, l:var_no_braces)
-      call add(l:sub_vals, l:vscode_vars[l:var_no_braces])
+    if has_key(a:variables, l:var_no_braces)
+      call add(l:sub_vals, a:variables[l:var_no_braces])
     elseif match(l:var, s:env_search_pat) !=# -1
       let l:env = l:var[matchend(l:var, s:env_search_pat) : -1]
       execute 'call add(l:sub_vals, $'.l:env.')'

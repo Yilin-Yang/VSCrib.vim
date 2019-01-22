@@ -29,29 +29,10 @@ vscrib#FindWorkspace({search_from})                   *vscrib#FindWorkspace()*
   Throws ERROR(NotFound) If a `.vscode` folder could not be found.
   Throws ERROR(WrongType) If {search_from} isn't a string.
 
-vscrib#VariablesFrom({workspace}, {cwd}, {file}, {curpos}, {selection},
-  {vscode})                                           *vscrib#VariablesFrom()*
-  Returns a dictionary of what the VSCode task/debugging variables would be,
-  using the arguments given.
-
-  {workspace} The absolute path to the workspace folder.
-
-  {cwd}       The absolute path to the current working directory.
-
-  {file}      The absolute path of the file currently open.
-
-  {curpos}    The position of the cursor, as returned by `getcurpos()`.
-
-  {selection} The current visual section.
-
-  {vscode}    An absolute path to a VSCode executable, or garbage.
-
-  Throws ERROR(BadValue) If paths given are not absolute paths.
-  Throws ERROR(WrongType) If arguments given are of the wrong type.
-
 vscrib#SetVariables([relative_to], [vscode_exe])       *vscrib#SetVariables()*
   Updates the VSCode task/debugging variables cache, searching from the given
-  directory (by default, the current working directory).
+  directory (by default, the current working directory). Returns a deep copy
+  of the updated cache.
 
   [relative_to] is an absolute path to a directory, from which to start
   searching for a `.vscode` folder. [vscode_exe]  is an absolute path to a
@@ -90,14 +71,28 @@ vscrib#GetLaunchJSON([workspace_folder])              *vscrib#GetLaunchJSON()*
   `launch.json` file could be found in the current workspace folder, or any of
   its parent directories.
 
-vscrib#Substitute({line}, [ignore_unrecognized], [no_interactive],
-  [no_inputsave])                                        *vscrib#Substitute()*
+vscrib#Substitute({line}, [variables], [ignore_unrecognized],
+  [no_interactive], [no_inputsave])                      *vscrib#Substitute()*
   Perform VSCode's task/debugging variable substitution on {line} and return
   it.
 
-  Silently ignores unrecognized variables if [ignore_unrecognized] is true.
+  Uses currently cached variables if [variables] is an empty dictionary;
+  otherwise, uses the dictionary given. This should be a dictionary returned
+  by a call to |SetVariables()| or |GetVariables()|.
 
-  Prompts for user input, if [no_interactive] is set to false.
+  As of the time of writing, this function does NOT support substitution of
+  VSCode settings and commands, e.g. `${config:editor.fontSize}` or
+  `${command.explorer.newFolder}`. Attempted substitution of these variables
+  will produce errors, unless [ignore_unrecognized] is true.
+
+  VSCode normally offers 'input' variables (see:
+  https://code.visualstudio.com/docs/editor/variables-reference) that allow
+  tasks and launch configurations to prompt for user input, e.g. for the name
+  of the executable to debug. This function offers limited support for user
+  input: variables of the form `${prompt:Message goes here}` will, if
+  [no_interactive] is set to false, prompt the user for input using vim's
+  `input()` function. (In this case, the prompt would be: 'Message goes here:
+  <CURSOR>', with `<CURSOR>` being the position of the user's cursor.)
 
   Does not invoke `inputsave()` or `inputrestore()` if [no_inputsave] is set
   to true. This is useful when automatically supplying answers to interactive
