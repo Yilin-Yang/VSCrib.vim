@@ -26,6 +26,66 @@ let s:vscode_variables = {
     \ }
 
 ""
+" @dict VSCrib
+" A 'cribbed' VSCode working 'state', encompassing an active workspace.
+"
+" This encapsulation in an object (as opposed to a 'purely functional'
+" approach) is meant to prevent concurrency issues arising from multiple
+" plugins using VSCrib at the same time.
+"
+" If VSCrib.vim had a *single* global state (of workspace variables, etc.), then
+" that state could be clobbered by calls to @function(SetVariables) made by
+" other plugins; e.g. if one plugin wants to update the active workspace only
+" when the user `cd`s into another directory, while another wants to update
+" whenever the user opens a new file, then one plugin could overwrite the
+" shared workspace state 'while the other wasn't looking.'
+"
+" To avoid this, VSCrib.vim's interface is tied to a VSCrib *object*: the
+" 'state' of the workspace is fully contained by this object. So the two
+" plugins mentioned above would have two *different* objects, with two
+" independently modifiable states, and neither would have to consider the
+" other's existence.
+
+""
+" Create a @dict(VSCrib) object.
+function! vscrib#New() abort
+  return {
+      \ 'TYPE': {'VSCrib': 1},
+      \ '__vars': deepcopy(s:vscode_variables),
+      \ 'FindWorkspace': function('vscrib#FindWorkspace'),
+      \ 'VariablesFrom': function('vscrib#VariablesFrom'),
+      \ 'Refresh': function('vscrib#Refresh'),
+      \ 'GetVariables': function('vscrib#GetVariables'),
+      \ 'StripComments': function('vscrib#StripComments'),
+      \ 'GetWorkspaceJSON': function('vscrib#GetWorkspaceJSON'),
+      \ 'Substitute': function('vscrib#Substitute'),
+      \ }
+endfunction
+
+function! s:StrDump(obj) abort
+  let l:str = ''
+  redir => l:str
+    silent! echo a:obj
+  redir end
+  return l:str
+endfunction
+
+""
+" Type check to make sure that a VSCrib function wasn't accidentally assigned
+" into another dictionary, e.g. as an incorrectly bound callback function.
+" @throws WrongType
+" @private
+function! vscrib#CheckType(obj) abort
+  if type(a:obj) !=# v:t_dict
+      \ || !has_key(a:obj, 'TYPE')
+      \ || !has_key(a:obj['TYPE'], 'VSCrib')
+    throw maktaba#error#WrongType(
+        \ 'self object isn''t a VSCrib: %s', s:StrDump(a:obj))
+  endif
+endfunction
+
+""
+" @dict VSCrib
 " Search upwards from the current directory to find a `.vscode` folder,
 " returning the absolute filepath of the folder containing `.vscode` if found,
 " without trailing slash.
@@ -57,6 +117,7 @@ function! vscrib#FindWorkspace(search_from) abort
 endfunction
 
 ""
+" @dict VSCrib
 " Returns a dictionary of what the VSCode task/debugging variables would be,
 " using the arguments given.
 "
@@ -116,20 +177,21 @@ function! vscrib#VariablesFrom(
 endfunction
 
 ""
+" @dict VSCrib
 " Updates the VSCode task/debugging variables cache, searching from the given
-" directory (by default, the current working directory). Returns a deep copy
-" of the updated cache.
+" directory (by default, the current working directory).
 "
 " [relative_to] is an absolute path to a directory, from which to start
 "     searching for a `.vscode` folder.
 " [vscode_exe]  is an absolute path to a VSCode executable, or garbage.
 "
 " @default relative_to=getcwd()
-" @default vscode_exe='NO_VSCODE_EXE_SPECIFIED'
+" @default vscode_exe='/NO_VSCODE_EXE_SPECIFIED'
 " @throws NotFound  If no VSCode workspace folder could be found.
 " @throws WrongType If [relative_to] or [vscode_exe ]aren't strings.
 " @throws BadValue  If [relative_to] or [vscode_exe] aren't a directory and a file, respectively; or if either is not an absolute filepath.
-function! vscrib#SetVariables(...) abort
+function! vscrib#Refresh(...) dict abort
+  call vscrib#CheckType(l:self)
   let a:relative_to = get(a:000, 0, getcwd())
   call maktaba#ensure#IsDirectory(a:relative_to)
   call maktaba#ensure#IsAbsolutePath(a:relative_to)
@@ -144,24 +206,25 @@ function! vscrib#SetVariables(...) abort
 
   let l:workspace = vscrib#FindWorkspace(a:relative_to)
 
-  let s:vscode_variables = vscrib#VariablesFrom(
+  let l:self['__vars'] = vscrib#VariablesFrom(
       \ l:workspace, a:relative_to, expand('%:p'), getcurpos(),
       \ maktaba#buffer#GetVisualSelection(), a:vscode_exe
       \ )
-
-  return deepcopy(s:vscode_variables)
 endfunction
 
 ""
+" @dict VSCrib
 " Returns the currently cached VSCode task/debugging variables; if [mutable]
 " is true, returns a mutable reference to the cache instead of a deep copy.
 " @throws WrongType If [mutable] is not a boolean value.
-function! vscrib#GetVariables(...) abort
+function! vscrib#GetVariables(...) dict abort
+  call vscrib#CheckType(l:self)
   let a:mutable = get(a:000, 0, v:false)
   if type(a:mutable) !=# v:t_bool && !maktaba#value#IsNumber(a:mutable)
     throw maktaba#error#WrongType('Did not receive a boolean.')
   endif
-  return a:mutable ? s:vscode_variables : deepcopy(s:vscode_variables)
+  let l:vscode_vars = l:self['__vars']
+  return a:mutable ? l:vscode_vars : deepcopy(l:vscode_vars)
 endfunction
 
 ""
@@ -219,37 +282,45 @@ function! vscrib#StripComments(line) abort
 endfunction
 
 ""
-" Return the nearest `launch.json` file, parsed into a dictionary, searching
-" from [workspace_folder].
+" @dict VSCrib
+" Return the nearest JSON file with named [filename] that can be found in a
+" `.vscode` directory, parsed into a dictionary, searching from the cached
+" workspace folder.
 "
-" If no `launch.json` file is found in the current workspace folder, will
-" search up to find the closest parent directory containing a
-" `.vscode/launch.json` file. If a `launch.json` file is found, but it cannot
-" be read or parsed, will continue searching upwards into parent directories.
+" If the JSON file can't be found in the current workspace folder, will
+" search up to find the closest parent directory containing the requested file
+" in a `.vscode` directory. If one is found, but it cannot be read or parsed,
+" will continue searching upwards into parent directories.
 "
+" @default filename='launch.json'
 " @default workspace_folder=The cached value of 'workspaceFolder'.
-" @throws NotFound    If no workspace folder is currently set; or if no `launch.json` file could be found in the current workspace folder, or any of its parent directories.
-function! vscrib#GetLaunchJSON(...) abort
-  let l:workspace = get(a:000, 0, s:vscode_variables['workspaceFolder'])
+" @throws NotFound    If no workspace folder is currently set; or if the requested file could be found in the current workspace folder, or any of its parent directories.
+function! vscrib#GetWorkspaceJSON(...) dict abort
+  call vscrib#CheckType(l:self)
+  let a:filename = get(a:000, 0, 'launch.json')
+  call maktaba#ensure#IsString(a:filename)
+  let a:workspace = get(a:000, 1, l:self['__vars']['workspaceFolder'])
+  let l:workspace = a:workspace  " mutable 'working copy'
   if empty(l:workspace)
     throw maktaba#error#NotFound('workspaceFolder not set/given!')
   endif
 
   let l:workspace = maktaba#path#StripTrailingSlash(l:workspace)
-  let l:launch_json = l:workspace.'/.vscode/launch.json'
+  let l:target_json = l:workspace.'/.vscode/'.a:filename
 
-  while !maktaba#path#Exists(l:launch_json)
+  while !maktaba#path#Exists(l:target_json)
     if l:workspace ==# maktaba#path#RootComponent(l:workspace)
       throw maktaba#error#NotFound(
-          \ 'Could not find working launch.json searching from: %s',
-          \ s:vscode_variables['workspaceFolder'])
+          \ 'Could not find working %s searching from: %s',
+          \ a:filename,
+          \ a:workspace)
     endif
     let l:workspace = maktaba#path#Dirname(l:workspace)
-    let l:launch_json = l:workspace.'/.vscode/launch.json'
+    let l:target_json = l:workspace.'/.vscode/'.a:filename
   endwhile
 
   try
-    let l:contents = readfile(l:launch_json)
+    let l:contents = readfile(l:target_json)
 
     " VSCode JSON files might include illegal comments; strip those
     let l:i = len(l:contents) - 1 | while l:i >=# 0 && !empty(l:contents)
@@ -264,20 +335,18 @@ function! vscrib#GetLaunchJSON(...) abort
     let l:json = json_decode(join(l:contents, "\n"))
   catch /E484/  " Can't open file
     let l:workspace = maktaba#path#Dirname(l:workspace)
-    return vscrib#GetLaunchJSON(l:workspace)
+    return l:self.GetWorkspaceJSON(a:filename, l:workspace)
   catch /E474/  " Failed to parse
     let l:workspace = maktaba#path#Dirname(l:workspace)
-    return vscrib#GetLaunchJSON(l:workspace)
+    return l:self.GetWorkspaceJSON(a:filename, l:workspace)
   endtry
   return l:json
 endfunction
 
 ""
-" Perform VSCode's task/debugging variable substitution on {line} and return it.
-"
-" Uses currently cached variables if [variables] is an empty dictionary;
-" otherwise, uses the dictionary given. This should be a dictionary returned
-" by a call to @function(SetVariables) or @function(GetVariables).
+" @dict VSCrib
+" Perform VSCode's task/debugging variable substitution on {line} using cached
+" variables and return it.
 "
 " As of the time of writing, this function does NOT support substitution of
 " VSCode settings and commands, e.g. `${config:editor.fontSize}` or
@@ -301,14 +370,12 @@ endfunction
 " @default no_inputsave=v:false
 " @throws WrongType If {line} is not a string.
 " @throws BadValue  If the line contains malformed variables, OR if the line contains unrecognized variables and [ignore_unrecognized] is false, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
-function! vscrib#Substitute(line, ...) abort
-  let a:variables = maktaba#ensure#IsDict(get(a:000, 0, {}))
-  if empty(a:variables)
-    let a:variables = vscrib#GetVariables()
-  endif
-  let a:ignore_unrecognized = get(a:000, 1, v:false)
-  let a:no_interactive = get(a:000, 2, v:false)
-  let a:no_inputsave = get(a:000, 3, v:false)
+function! vscrib#Substitute(line, ...) dict abort
+  call vscrib#CheckType(l:self)
+  let a:variables = l:self['__vars']
+  let a:ignore_unrecognized = get(a:000, 0, v:false)
+  let a:no_interactive = get(a:000, 1, v:false)
+  let a:no_inputsave = get(a:000, 2, v:false)
   let l:line = maktaba#ensure#IsString(a:line)
 
   call maktaba#ensure#IsIn(a:ignore_unrecognized, [v:true, v:false, 1, 0])

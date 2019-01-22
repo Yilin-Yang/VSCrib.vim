@@ -1,6 +1,9 @@
 Include: AssertDeepEquals.vader
 
-Execute (vscrib#SetVariables: General Test):
+Execute (vscrib#Refresh: Setup):
+  let g:vscrib = vscrib#New()
+
+Execute (vscrib#Refresh: General Test):
   let g:workspace_basename = 'good_parent'
   let g:workspace = g:test_directories.'/'.g:workspace_basename
   let g:cwd = g:test_directories.'/good_parent/empty_child'
@@ -28,12 +31,12 @@ Execute (vscrib#SetVariables: General Test):
       \ }
   execute 'cd '.g:test_directories.'/good_parent/empty_child'
   edit blah.md
-  call vscrib#SetVariables()
+  call g:vscrib.Refresh()
 Then:
-  let g:actual = vscrib#GetVariables(v:false)
+  let g:actual = g:vscrib.GetVariables(v:false)
   call AssertDeepEquals(g:expected, g:actual)
 
-Execute (vscrib#SetVariables: Good CWD):
+Execute (vscrib#Refresh: Good CWD):
   let g:workspace_basename = 'good_child'
   let g:workspace = g:test_directories.'/good_parent/'.g:workspace_basename
   let g:cwd = g:test_directories.'/good_parent/good_child'
@@ -61,10 +64,10 @@ Execute (vscrib#SetVariables: Good CWD):
       \ }
   execute 'cd '.g:test_directories.'/good_parent/good_child'
   edit blah.md
-  call vscrib#SetVariables()
+  call g:vscrib.Refresh()
 Then:
-  let g:actual = vscrib#GetVariables(v:false)
+  let g:actual = g:vscrib.GetVariables(v:false)
   call AssertDeepEquals(g:expected, g:actual)
 
-Execute (vscrib#SetVariables: Clean Up):
+Execute (vscrib#Refresh: Clean Up):
   execute 'cd '.g:test_dir
