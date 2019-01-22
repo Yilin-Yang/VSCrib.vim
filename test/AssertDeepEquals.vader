@@ -14,19 +14,21 @@ Execute (Declare AssertDeepEquals Helper):
   endfunction
 
   function! AssertDeepEquals(expected, actual) abort
+    let l:t_dict = 4
+    let l:t_list = 3
     for [l:key, l:value] in items(a:expected)
       Assert has_key(a:actual, l:key), 'Did not have key: '.l:key
       let l:exp = a:expected[l:key]
       let l:act = a:actual[l:key]
       AssertEqual type(l:exp), type(l:act),
           \ FailedComparison(l:key, l:exp, l:act, a:actual, 'Type mismatch')
-      if type(l:exp) ==# v:t_dict
+      if type(l:exp) ==# l:t_dict
         call AssertDeepEquals(l:exp, l:act)
-      elseif type(l:exp) ==# v:t_list
+      elseif type(l:exp) ==# l:t_list
         let l:i = 0 | while l:i <# len(l:exp)
           let l:list_exp = l:exp[l:i]
           let l:list_act = l:act[l:i]
-          if type(l:list_exp) ==# v:t_dict || type(l:list_exp) ==# v:t_list
+          if type(l:list_exp) ==# l:t_dict || type(l:list_exp) ==# l:t_list
             call AssertDeepEquals(l:list_exp, l:list_act)
           else
             AssertEqual l:list_exp, l:list_act, 
@@ -38,5 +40,10 @@ Execute (Declare AssertDeepEquals Helper):
         AssertEqual a:expected[l:key], a:actual[l:key], 
             \ FailedComparison(l:key, l:exp, l:act, a:actual, 'Equality failed')
       endif
-    endfor
+      " work around 7.4 sticky type checking
+      unlet l:act
+      unlet l:exp
+      unlet l:value 
+      unlet l:key
+    endfor 
   endfunction

@@ -72,7 +72,7 @@ Then:
 Execute (vscrib#GetWorkspaceJSON: No launch.json To Be Found):
   execute 'cd '.g:test_directories.'/empty_grandparent/empty_parent/empty_child'
   " hardcode the workspace folder, since FindWorkspace would also fail
-  let g:vars = g:vscrib.GetVariables(v:true)
+  let g:vars = g:vscrib.GetVariables(1)
   let g:vars['workspaceFolder'] = 
       \ g:test_directories.'/empty_grandparent/empty_parent/empty_child'
 Then:

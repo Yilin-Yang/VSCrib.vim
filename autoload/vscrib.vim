@@ -127,7 +127,7 @@ endfunction
 "
 " {file}      The absolute path of the file currently open.
 "
-" {curpos}    The position of the cursor, as returned by `getcurpos()`.
+" {pos}       The position of the cursor, as returned by `getpos('.')`.
 "
 " {selection} The current visual section.
 "
@@ -137,7 +137,7 @@ endfunction
 " @throws WrongType If arguments given are of the wrong type.
 " @private
 function! vscrib#VariablesFrom(
-    \ workspace, cwd, file, curpos, selection, vscode) abort
+    \ workspace, cwd, file, pos, selection, vscode) abort
   call maktaba#ensure#IsAbsolutePath(a:workspace)
   call maktaba#ensure#IsDirectory(a:workspace)
   call maktaba#ensure#IsAbsolutePath(a:cwd)
@@ -145,7 +145,7 @@ function! vscrib#VariablesFrom(
   call maktaba#ensure#IsAbsolutePath(a:file)
   " call maktaba#ensure#IsFile(a:file)  " might be a nofile buffer
   call maktaba#ensure#IsString(a:file)
-  call maktaba#ensure#IsList(a:curpos)
+  call maktaba#ensure#IsList(a:pos)
   call maktaba#ensure#IsString(a:selection)
   call maktaba#ensure#IsString(a:vscode)
 
@@ -169,7 +169,7 @@ function! vscrib#VariablesFrom(
       \ 'fileDirname': maktaba#path#Dirname(a:file),
       \ 'fileExtname': l:file_extname,
       \ 'cwd': a:cwd,
-      \ 'lineNumber': a:curpos[1],
+      \ 'lineNumber': a:pos[1],
       \ 'selectedText': a:selection,
       \ 'execPath': a:vscode,
       \ }
@@ -207,7 +207,7 @@ function! vscrib#Refresh(...) dict abort
   let l:workspace = vscrib#FindWorkspace(a:relative_to)
 
   let l:self['__vars'] = vscrib#VariablesFrom(
-      \ l:workspace, a:relative_to, expand('%:p'), getcurpos(),
+      \ l:workspace, a:relative_to, expand('%:p'), getpos('.'),
       \ maktaba#buffer#GetVisualSelection(), a:vscode_exe
       \ )
 endfunction
@@ -219,8 +219,7 @@ endfunction
 " @throws WrongType If [mutable] is not a boolean value.
 function! vscrib#GetVariables(...) dict abort
   call vscrib#CheckType(l:self)
-  let a:mutable = get(a:000, 0, v:false)
-  call maktaba#ensure#IsIn(a:mutable, [v:true, v:false, 1, 0])
+  let a:mutable = maktaba#ensure#IsBool(get(a:000, 0, 0))
   let l:vscode_vars = l:self['__vars']
   return a:mutable ? l:vscode_vars : deepcopy(l:vscode_vars)
 endfunction
@@ -363,22 +362,22 @@ endfunction
 " to true. This is useful when automatically supplying answers to interactive
 " user prompts, e.g. when writing test cases for this function.
 "
-" @default ignore_unrecognized=v:true
-" @default no_interactive=v:false
-" @default no_inputsave=v:false
+" @default ignore_unrecognized=1
+" @default no_interactive=0
+" @default no_inputsave=0
 " @throws WrongType If {line} is not a string.
 " @throws BadValue  If the line contains malformed variables, OR if the line contains unrecognized variables and [ignore_unrecognized] is false, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
 function! vscrib#Substitute(line, ...) dict abort
   call vscrib#CheckType(l:self)
   let a:variables = l:self['__vars']
-  let a:ignore_unrecognized = get(a:000, 0, v:false)
-  let a:no_interactive = get(a:000, 1, v:false)
-  let a:no_inputsave = get(a:000, 2, v:false)
+  let a:ignore_unrecognized = get(a:000, 0, 0)
+  let a:no_interactive = get(a:000, 1, 0)
+  let a:no_inputsave = get(a:000, 2, 0)
   let l:line = maktaba#ensure#IsString(a:line)
 
-  call maktaba#ensure#IsIn(a:ignore_unrecognized, [v:true, v:false, 1, 0])
-  call maktaba#ensure#IsIn(a:no_interactive, [v:true, v:false, 1, 0])
-  call maktaba#ensure#IsIn(a:no_inputsave, [v:true, v:false, 1, 0])
+  call maktaba#ensure#IsBool(a:ignore_unrecognized)
+  call maktaba#ensure#IsBool(a:no_interactive)
+  call maktaba#ensure#IsBool(a:no_inputsave)
 
   let l:vars = []  " list of all variables to substitute
   let l:var = matchstr(l:line, s:var_search_pat) | while !empty(l:var)

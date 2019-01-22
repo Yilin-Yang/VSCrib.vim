@@ -33,7 +33,7 @@ Execute (vscrib#Refresh: General Test):
   edit blah.md
   call g:vscrib.Refresh()
 Then:
-  let g:actual = g:vscrib.GetVariables(v:false)
+  let g:actual = g:vscrib.GetVariables(0)
   call AssertDeepEquals(g:expected, g:actual)
 
 Execute (vscrib#Refresh: Good CWD):
@@ -66,7 +66,7 @@ Execute (vscrib#Refresh: Good CWD):
   edit blah.md
   call g:vscrib.Refresh()
 Then:
-  let g:actual = g:vscrib.GetVariables(v:false)
+  let g:actual = g:vscrib.GetVariables(0)
   call AssertDeepEquals(g:expected, g:actual)
 
 Execute (vscrib#Refresh: Clean Up):

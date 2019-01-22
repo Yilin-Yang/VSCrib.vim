@@ -6,7 +6,7 @@ Execute (vscrib#Substitute: Setup):
 
 Execute (vscrib#Substitute: No Substitutions):
   AssertEqual '"foobar": "Bar Foo Bar"', 
-      \ g:vscrib.Substitute('"foobar": "Bar Foo Bar"', v:false, v:true)
+      \ g:vscrib.Substitute('"foobar": "Bar Foo Bar"', 0, 1)
 
 Execute (vscrib#Substitute: VSCode Predefined Variables):
   let g:workspace_basename = 'good_parent'
@@ -36,7 +36,7 @@ Execute (vscrib#Substitute: VSCode Predefined Variables):
       \ }
   for [g:var, g:exp] in items(g:expected)
     AssertEqual '"foobar": "'.g:exp.'"', 
-        \ g:vscrib.Substitute('"foobar": "${'.g:var.'}"', v:false, v:true)
+        \ g:vscrib.Substitute('"foobar": "${'.g:var.'}"', 0, 1)
   endfor
 
 Execute (vscrib#Substitute: Multiple Substitutions Single Line):
@@ -44,22 +44,23 @@ Execute (vscrib#Substitute: Multiple Substitutions Single Line):
       \ g:vscrib.Substitute('"foobar:" "${fileExtname} ${execPath} ${workspaceFolder}"')
 
 Execute (vscrib#Substitute: Unrecognized Variable):
-  AssertThrows call g:vscrib.Substitute('"foobar": "${foobar}"', v:false, v:true)
+  AssertThrows call g:vscrib.Substitute('"foobar": "${foobar}"', 0, 1)
   AssertEqual 0, match(g:vader_exception, '^ERROR(NotImplemented)'),
       \ 'Threw bad exception: '.g:vader_exception
 
 Execute (vscrib#Substitute: Silently Ignore Unrecognized Variable):
   AssertEqual '"foobar": "${foobar}"',
-      \ g:vscrib.Substitute('"foobar": "${foobar}"', v:true, v:true)
+      \ g:vscrib.Substitute('"foobar": "${foobar}"', 1, 1)
 
 Execute (vscrib#Substitute: Prompt for User Input (Non-Interactive)):
   AssertThrows call g:vscrib.Substitute(
-      \ '"foobar": "${prompt:Prompt message}"', v:false, v:true)
+      \ '"foobar": "${prompt:Prompt message}"', 0, 1)
   AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)'),
       \ 'Threw bad exception: '.g:vader_exception
 
 Do (vscrib#Substitute: Prompt for User Input (Interactive)):
-  :let g:actual = g:vscrib.Substitute('"foobar": "${prompt:Prompt message}"', v:false, v:false, v:true)\<CR>
+  :unlet g:actual\<CR>
+  :let g:actual = g:vscrib.Substitute('"foobar": "${prompt:Prompt message}"', 0, 0, 1)\<CR>
   silver on the tree\<CR>
 Then:
   AssertEqual '"foobar": "silver on the tree"', g:actual

@@ -27,6 +27,7 @@ Execute (vscrib#VariablesFrom: General Test):
       \ 'execPath': g:vscode,
       \ }
 Then:
+  unlet g:actual
   let g:actual = vscrib#VariablesFrom(
        \ g:workspace, g:cwd, g:filename, g:curpos, g:selection, g:vscode)
   call AssertDeepEquals(g:expected, g:actual)
