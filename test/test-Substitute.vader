@@ -1,0 +1,42 @@
+Execute (vscrib#Substitute: Setup):
+  execute 'cd '.g:test_directories.'/good_parent/empty_child'
+  edit blah.md
+  call vscrib#SetVariables()
+
+Execute (vscrib#Substitute: No Substitutions):
+  AssertEqual '"foobar": "Bar Foo Bar"', 
+      \ vscrib#Substitute('"foobar": "Bar Foo Bar"', v:true)
+
+Execute (vscrib#Substitute: VSCode Predefined Variables):
+  let g:workspace_basename = 'good_parent'
+  let g:workspace = g:test_directories.'/'.g:workspace_basename
+  let g:cwd = g:test_directories.'/good_parent/empty_child'
+  let g:filename_no_extension = 'blah'
+  let g:filename_extension = '.md'
+  let g:filename_basename = g:filename_no_extension.g:filename_extension
+  let g:file_dirname = g:test_directories.'/good_parent/empty_child'
+  let g:filename = g:file_dirname.'/'.g:filename_basename
+  let g:curpos = [0, 1, 1, 0, 1]  " not sure why, but this is what it is?
+  let g:selection = ''  " NOTE: testing this with Vader is impractical
+  let g:vscode = '/NO_VSCODE_EXE_SPECIFIED'
+  let g:expected = {
+      \ 'workspaceFolder': g:workspace,
+      \ 'workspaceFolderBasename': g:workspace_basename,
+      \ 'file': g:filename,
+      \ 'relativeFile': 'empty_child/blah.md',
+      \ 'fileBasename': g:filename_basename,
+      \ 'fileBasenameNoExtension': g:filename_no_extension,
+      \ 'fileDirname': g:file_dirname,
+      \ 'fileExtname': g:filename_extension,
+      \ 'cwd': g:cwd,
+      \ 'lineNumber': g:curpos[1],
+      \ 'selectedText': g:selection,
+      \ 'execPath': g:vscode,
+      \ }
+  for [g:var, g:exp] in items(g:expected)
+    AssertEqual '"foobar": "'.g:exp.'"', 
+        \ vscrib#Substitute('"foobar": "${'.g:var.'}"', v:true)
+  endfor
+
+Execute (vscrib#Substitute: Clean Up):
+  execute 'cd '.g:test_dir

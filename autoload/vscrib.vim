@@ -273,6 +273,7 @@ endfunction
 "
 " Prompts for user input, if [no_interactive] is set to false.
 "
+" @default no_interactive=v:false
 " @throws WrongType If {line} is not a string.
 " @throws BadValue  If the line contains malformed or unrecognized variables, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string.
 function! vscrib#Substitute(line, ...) abort
@@ -280,7 +281,7 @@ function! vscrib#Substitute(line, ...) abort
   let l:line = maktaba#ensure#IsString(a:line)
 
   let l:vars = []  " list of all variables to substitute
-  let l:var = matchstr(l:line, s:var_search_pat) | while !empty(l:line)
+  let l:var = matchstr(l:line, s:var_search_pat) | while !empty(l:var)
     call add(l:vars, l:var)
     let l:first_after = matchend(l:line, s:var_search_pat)
     let l:line = l:line[l:first_after : ]
@@ -289,8 +290,9 @@ function! vscrib#Substitute(line, ...) abort
   let l:vscode_vars = vscrib#GetVariables(v:false)
   let l:sub_vals = []
   for l:var in l:vars
-    if has_key(l:vscode_vars, l:var)
-      call add(l:sub_vals, l:vscode_vars['l:var'])
+    let l:var_no_braces = l:var[2:-2]  " trim ${ and }
+    if has_key(l:vscode_vars, l:var_no_braces)
+      call add(l:sub_vals, l:vscode_vars[l:var_no_braces])
     elseif match(l:var, s:env_search_pat) !=# -1
       let l:env = l:var[matchend(l:var, s:env_search_pat) : -1]
       execute 'call add(l:sub_vals, $'.l:env.')'
@@ -317,7 +319,7 @@ function! vscrib#Substitute(line, ...) abort
   let l:i = 0 | while l:i <# len(l:vars)
     let l:var = l:vars[l:i]
     let l:sub = l:sub_vals[l:i]
-    call substitute(l:line, l:var, l:sub, '')
+    let l:line = substitute(l:line, l:var, l:sub, '')
   let l:i += 1 | endwhile
 
   return l:line
