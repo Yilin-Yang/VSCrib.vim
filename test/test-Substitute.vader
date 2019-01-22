@@ -38,6 +38,10 @@ Execute (vscrib#Substitute: VSCode Predefined Variables):
         \ vscrib#Substitute('"foobar": "${'.g:var.'}"', v:true)
   endfor
 
+Execute (vscrib#Substitute: Multiple Substitutions Single Line):
+  AssertEqual '"foobar:" ".md /NO_VSCODE_EXE_SPECIFIED '.g:workspace.'"',
+      \ vscrib#Substitute('"foobar:" "${fileExtname} ${execPath} ${workspaceFolder}"')
+
 Execute (vscrib#Substitute: Unrecognized Variable):
   AssertThrows call vscrib#Substitute('"foobar": "${foobar}"', v:true)
   AssertEqual 0, match(g:vader_exception, '^ERROR(NotImplemented)'),

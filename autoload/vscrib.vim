@@ -280,7 +280,7 @@ endfunction
 " @default no_interactive=v:false
 " @default no_inputsave=v:false
 " @throws WrongType If {line} is not a string.
-" @throws BadValue  If the line contains malformed or unrecognized variables, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string.
+" @throws BadValue  If the line contains malformed or unrecognized variables, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
 function! vscrib#Substitute(line, ...) abort
   let a:no_interactive = get(a:000, 0, v:false)
   let a:no_inputsave = get(a:000, 1, v:false)
