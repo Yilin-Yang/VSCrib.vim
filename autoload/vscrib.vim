@@ -27,9 +27,9 @@ let s:vscode_variables = {
 
 ""
 " @dict VSCrib
-" A 'cribbed' VSCode working 'state', encompassing an active workspace.
+" A "cribbed" VSCode working "state", encompassing an active workspace.
 "
-" This encapsulation in an object (as opposed to a 'purely functional'
+" This encapsulation in an object (as opposed to a "purely functional"
 " approach) is meant to prevent concurrency issues arising from multiple
 " plugins using VSCrib at the same time.
 "
@@ -40,9 +40,9 @@ let s:vscode_variables = {
 " whenever the user opens a new file, then one plugin could overwrite the
 " shared workspace state 'while the other wasn't looking.'
 "
-" To avoid this, VSCrib.vim's interface is tied to a VSCrib *object*: the
-" 'state' of the workspace is fully contained by this object. So the two
-" plugins mentioned above would have two *different* objects, with two
+" To avoid this, VSCrib.vim's interface is tied to a VSCrib OBJECT: the
+" "state" of the workspace is fully contained by this object. So the two
+" plugins mentioned above would have two DIFFERENT objects, with two
 " independently modifiable states, and neither would have to consider the
 " other's existence.
 
@@ -283,23 +283,23 @@ endfunction
 
 ""
 " @dict VSCrib
-" Return the nearest JSON file with named [filename] that can be found in a
+" Return the nearest JSON file with named {filename} that can be found in a
 " `.vscode` directory, parsed into a dictionary, searching from the cached
-" workspace folder.
+" workspace folder, e.g. if {filename} is 'launch.json', search for
+" `.vscode/launch.json` in the current workspace directory or in its parent
+" directories.
 "
 " If the JSON file can't be found in the current workspace folder, will
 " search up to find the closest parent directory containing the requested file
 " in a `.vscode` directory. If one is found, but it cannot be read or parsed,
 " will continue searching upwards into parent directories.
 "
-" @default filename='launch.json'
-" @default workspace_folder=The cached value of 'workspaceFolder'.
+" @default workspace_folder=the cached value of 'workspaceFolder'
 " @throws NotFound    If no workspace folder is currently set; or if the requested file could be found in the current workspace folder, or any of its parent directories.
-function! vscrib#GetWorkspaceJSON(...) dict abort
+function! vscrib#GetWorkspaceJSON(filename, ...) dict abort
   call vscrib#CheckType(l:self)
-  let a:filename = get(a:000, 0, 'launch.json')
   call maktaba#ensure#IsString(a:filename)
-  let a:workspace = get(a:000, 1, l:self['__vars']['workspaceFolder'])
+  let a:workspace = get(a:000, 0, l:self['__vars']['workspaceFolder'])
   let l:workspace = a:workspace  " mutable 'working copy'
   if empty(l:workspace)
     throw maktaba#error#NotFound('workspaceFolder not set/given!')
@@ -353,17 +353,17 @@ endfunction
 " `${command.explorer.newFolder}`. Attempted substitution of these variables
 " will produce errors, unless [ignore_unrecognized] is true.
 "
-" VSCode normally offers 'input' variables (see: https://code.visualstudio.com/docs/editor/variables-reference)
+" VSCode normally offers "input" variables (see: https://code.visualstudio.com/docs/editor/variables-reference)
 " that allow tasks and launch configurations to prompt for user input, e.g.
 " for the name of the executable to debug. This function offers limited
 " support for user input: variables of the form `${prompt:Message goes here}`
 " will, if [no_interactive] is set to false, prompt the user for input using
 " vim's `input()` function. (In this case, the prompt would be: 'Message goes
-" here: <CURSOR>', with `<CURSOR>` being the position of the user's cursor.)
+" here: <CURSOR>'.)
 "
 " Does not invoke `inputsave()` or `inputrestore()` if [no_inputsave] is set
 " to true. This is useful when automatically supplying answers to interactive
-" user prompts, e.g. in writing test cases for this function.
+" user prompts, e.g. when writing test cases for this function.
 "
 " @default ignore_unrecognized=v:true
 " @default no_interactive=v:false

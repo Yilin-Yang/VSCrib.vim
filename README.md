@@ -58,46 +58,24 @@ VSCrib.vim is a [maktaba-style library plugin](https://github.com/google/vim-mak
 that is, VSCrib.vim does not directly offer any user-facing functionality and is
 meant for exclusive use in other plugins.
 
-Of the functions in `./autoload/vscrib.vim`, the following are likely of most
-interest:
+The VSCrib.vim interface is accessible through the [VSCrib object.](./autoload/vscrib.vim)
+A call to `function! vscrib#New()` will return a VSCrib object, which:
 
-- `FindWorkspace()` - Locates and returns the nearest directory containing
-  a `.vscode` folder, starting from the current working directory (or the
-  directory given) and working its way up. This directory is assumed to be the
-  "active VSCode workspace."
-- `SetVariables()` - After determining the "active VSCode workspace," uses that
-  directory (and the current vim editor state) to populate a plugin-wide cache
-  of [predetermined variables](https://code.visualstudio.com/docs/editor/variables-reference)
-  normally used by VSCode for variable substitution, e.g. in `launch.json`
-  configurations for debug adapter extensions.
-- `GetVariables()` - Returns a deep-copy of the plugin-wide variable cache, OR
-  a mutable reference to said cache.
-- `StripComments()` - While the JSON specification disallows comments (`// of
-  this form`), VSCode JSON configuration files may still contain them. Since
-  this would produce parser errors (e.g. in calls to vim's `json_decode`),
-  VSCrib.vim provides this function for removing such comments. It checks for
-  edge cases: in particular, whether `//` substrings occur inside quotation
-  marks.
-- `GetLaunchJSON()` - Locates and returns a JSON dictionary populated from the
-  nearest valid (i.e. extant and parsable) `launch.json` file, starting from the
-  current cached workspace directory (or the directory given) and working its
-  way up.
-- `Substitute()` - Performs [variable substitution](https://code.visualstudio.com/docs/editor/variables-reference)
-  on a given string using cached workspace variables and returns it. As of the
-  time of writing, offers only limited support for interactive user input.
+- Can search for the "active VSCode workspace," i.e. a folder containing a `.vscode`
+  directory, which can start from the current working directory, or from
+  a directory given as an argument, and,
+- Can search for, read, and parse JSON configuration files found in such
+  `.vscode` folders, and,
+- Stores an internal cache of "VSCode variables" that VSCode uses for [variable
+  substitution](https://code.visualstudio.com/docs/editor/variables-reference)
+  when parsing its configuration files, populating these variables from the
+  current workspace (and other contextual information), and,
+- Can update said cache through calls to `Refresh()`, and,
+- When parsing JSON configuration files, can perform variable substitution on
+  JSON entries (e.g. replacement of `${fileBasename}` with the name of the
+  current file) using cached variables.
 
-As of the time of writing, VSCrib.vim's structure may produce concurrency
-problems if actively used by multiple plugins simultaneously.  Calls to
-`SetVariables` will clobber the preexisting variable cache, which may be
-problematic if multiple plugins want to "keep active" *different* folders as an
-"active VSCode workspace". For the time being, plugins that use VSCrib.vim
-should either:
-
-1. Rely exclusively on VSCrib.vim's "default" workspace search behavior,
-   ignoring `SetVariables()`'s ability to start searching from a folder other
-   than `getcwd()`, or,
-2. Explicitly invoke `SetVariables()` before invoking `Substitute()`, storing
-   the returned (copy of) the variable cache, and passing that to `Substitute()`.
+See `:help VSCrib` for more details.
 
 Contribution
 --------------------------------------------------------------------------------
