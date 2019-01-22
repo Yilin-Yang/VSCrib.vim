@@ -21,9 +21,10 @@ FUNCTIONS                                               *VSCrib.vim-functions*
 
 vscrib#FindWorkspace({search_from})                   *vscrib#FindWorkspace()*
   Search upwards from the current directory to find a `.vscode` folder,
-  returning the absolute filepath of the folder containing `.vscode` if found.
+  returning the absolute filepath of the folder containing `.vscode` if found,
+  without trailing slash.
 
-  {search_from} should be an absolute filepath.
+  {search_from} should be an absolute filepath to a directory.
   Throws ERROR(BadValue) If {search_from} isn't an absolute path.
   Throws ERROR(NotFound) If a `.vscode` folder could not be found.
   Throws ERROR(WrongType) If {search_from} isn't a string.
@@ -48,8 +49,7 @@ vscrib#VariablesFrom({workspace}, {cwd}, {file}, {curpos}, {selection},
   Throws ERROR(BadValue) If paths given are not absolute paths.
   Throws ERROR(WrongType) If arguments given are of the wrong type.
 
-vscrib#SetVSCodeVariables([relative_to], [vscode_exe])
-                                                 *vscrib#SetVSCodeVariables()*
+vscrib#SetVariables([relative_to], [vscode_exe])       *vscrib#SetVariables()*
   Updates the VSCode task/debugging variables cache, searching from the given
   directory (by default, the current working directory).
 
@@ -64,19 +64,54 @@ vscrib#SetVSCodeVariables([relative_to], [vscode_exe])
   Throws ERROR(BadValue) If [relative_to] or [vscode_exe] aren't a directory
   and a file, respectively; or if either is not an absolute filepath.
 
-vscrib#GetLaunchJSON()                                *vscrib#GetLaunchJSON()*
-  Return the nearest `launch.json` file, parsed into a dictionary, using the
-  cached VSCode workspace variables.
+vscrib#GetVariables([mutable])                         *vscrib#GetVariables()*
+  Returns the currently cached VSCode task/debugging variables; if [mutable]
+  is true, returns a mutable reference to the cache instead of a deep copy.
+  Throws ERROR(WrongType) If [mutable] is not a boolean value.
+
+vscrib#StripComments({line})                          *vscrib#StripComments()*
+  Remove inline comments (e.g. `// this sort of comment`) from the given
+  string, if present, and return it.
+  Throws ERROR(WrongType) If not given a string.
+  Throws ERROR(BadValue) If the given string contains newlines or carriage
+  returns.
+
+vscrib#GetLaunchJSON([workspace_folder])              *vscrib#GetLaunchJSON()*
+  Return the nearest `launch.json` file, parsed into a dictionary, searching
+  from [workspace_folder].
 
   If no `launch.json` file is found in the current workspace folder, will
   search up to find the closest parent directory containing a
-  `.vscode/launch.json` file.
+  `.vscode/launch.json` file. If a `launch.json` file is found, but it cannot
+  be read or parsed, will continue searching upwards into parent directories.
 
+  [workspace_folder] is The cached value of 'workspaceFolder'. if omitted.
   Throws ERROR(NotFound) If no workspace folder is currently set; or if no
   `launch.json` file could be found in the current workspace folder, or any of
   its parent directories.
-  Throws ERROR(IOError) If the found `launch.json` file could not be opened.
-  Throws ERROR(ParseError) If the `launch.json` file could not be parsed.
+
+vscrib#Substitute({line}, [ignore_unrecognized], [no_interactive],
+  [no_inputsave])                                        *vscrib#Substitute()*
+  Perform VSCode's task/debugging variable substitution on {line} and return
+  it.
+
+  Silently ignores unrecognized variables if [ignore_unrecognized] is true.
+
+  Prompts for user input, if [no_interactive] is set to false.
+
+  Does not invoke `inputsave()` or `inputrestore()` if [no_inputsave] is set
+  to true. This is useful when automatically supplying answers to interactive
+  user prompts, e.g. in writing test cases for this function.
+
+  [ignore_unrecognized] is v:true if omitted.
+  [no_interactive] is v:false if omitted.
+  [no_inputsave] is v:false if omitted.
+  Throws ERROR(WrongType) If {line} is not a string.
+  Throws ERROR(BadValue) If the line contains malformed variables, OR if the
+  line contains unrecognized variables and [ignore_unrecognized] is false, OR
+  if [no_interactive] is set to true and dynamic variables that prompt for
+  user input are in the string, OR if the given line contains newline
+  characters or carriage returns.
 
 
 vim:tw=78:ts=8:ft=help:norl:
