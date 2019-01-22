@@ -21,8 +21,9 @@ before_script:
     # sudo apt-get install -y neovim vim
     sudo apt-get install -y neovim
     nvim --version
-  - git clone https://github.com/junegunn/vader.vim.git test/vader.vim
-  - git clone https://github.com/Google/vim-maktaba.git test/vim-maktaba.vim
+  - mkdir -p ~/.vim/bundle
+  - git clone https://github.com/junegunn/vader.vim.git ~/.vim/bundle/vader.vim
+  - git clone https://github.com/Google/vim-maktaba.git ~/.vim/bundle/vim-maktaba.vim
 
 script:
   - cd test  # to make handling filepaths easier
