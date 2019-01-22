@@ -273,11 +273,17 @@ endfunction
 "
 " Prompts for user input, if [no_interactive] is set to false.
 "
+" Does not invoke `inputsave()` or `inputrestore()` if [no_inputsave] is set
+" to true. This is useful when automatically supplying answers to interactive
+" user prompts, e.g. in writing test cases for this function.
+"
 " @default no_interactive=v:false
+" @default no_inputsave=v:false
 " @throws WrongType If {line} is not a string.
 " @throws BadValue  If the line contains malformed or unrecognized variables, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string.
 function! vscrib#Substitute(line, ...) abort
   let a:no_interactive = get(a:000, 0, v:false)
+  let a:no_inputsave = get(a:000, 1, v:false)
   let l:line = maktaba#ensure#IsString(a:line)
 
   let l:vars = []  " list of all variables to substitute
@@ -296,18 +302,18 @@ function! vscrib#Substitute(line, ...) abort
     elseif match(l:var, s:env_search_pat) !=# -1
       let l:env = l:var[matchend(l:var, s:env_search_pat) : -1]
       execute 'call add(l:sub_vals, $'.l:env.')'
-    elseif match(l:var, s:prompt_search_pat)
+    elseif match(l:var, s:prompt_search_pat) !=# -1
       if a:no_interactive
         throw maktaba#error#BadValue(
             \ 'Substitution would prompt for user input: %s', l:var)
       endif
-      let l:prompt_msg = l:var[matchend(l:var, s:prompt_search_pat) : -1]
-      call inputsave()
+      let l:prompt_msg = l:var[matchend(l:var, s:prompt_search_pat) : -2]
+      if !a:no_inputsave | call inputsave() | endif
       let l:input = input(l:prompt_msg.': ',
         \ '',
         \ 'file'
         \ )
-      call inputrestore()
+      if !a:no_inputsave | call inputrestore() | endif
       call add(l:sub_vals, l:input)
     else
       throw maktaba#error#NotImplemented(
