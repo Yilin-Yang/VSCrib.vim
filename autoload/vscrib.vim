@@ -271,20 +271,28 @@ endfunction
 ""
 " Perform VSCode's task/debugging variable substitution on {line} and return it.
 "
+" Silently ignores unrecognized variables if [ignore_unrecognized] is true.
+"
 " Prompts for user input, if [no_interactive] is set to false.
 "
 " Does not invoke `inputsave()` or `inputrestore()` if [no_inputsave] is set
 " to true. This is useful when automatically supplying answers to interactive
 " user prompts, e.g. in writing test cases for this function.
 "
+" @default ignore_unrecognized=v:true
 " @default no_interactive=v:false
 " @default no_inputsave=v:false
 " @throws WrongType If {line} is not a string.
-" @throws BadValue  If the line contains malformed or unrecognized variables, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
+" @throws BadValue  If the line contains malformed variables, OR if the line contains unrecognized variables and [ignore_unrecognized] is false, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
 function! vscrib#Substitute(line, ...) abort
-  let a:no_interactive = get(a:000, 0, v:false)
-  let a:no_inputsave = get(a:000, 1, v:false)
+  let a:ignore_unrecognized = get(a:000, 0, v:false)
+  let a:no_interactive = get(a:000, 1, v:false)
+  let a:no_inputsave = get(a:000, 2, v:false)
   let l:line = maktaba#ensure#IsString(a:line)
+
+  call maktaba#ensure#IsIn(a:ignore_unrecognized, [v:true, v:false, 1, 0])
+  call maktaba#ensure#IsIn(a:no_interactive, [v:true, v:false, 1, 0])
+  call maktaba#ensure#IsIn(a:no_inputsave, [v:true, v:false, 1, 0])
 
   let l:vars = []  " list of all variables to substitute
   let l:var = matchstr(l:line, s:var_search_pat) | while !empty(l:var)
@@ -295,7 +303,8 @@ function! vscrib#Substitute(line, ...) abort
 
   let l:vscode_vars = vscrib#GetVariables(v:false)
   let l:sub_vals = []
-  for l:var in l:vars
+  let l:i = 0 | while l:i <# len(l:vars)
+    let l:var = l:vars[l:i]
     let l:var_no_braces = l:var[2:-2]  " trim ${ and }
     if has_key(l:vscode_vars, l:var_no_braces)
       call add(l:sub_vals, l:vscode_vars[l:var_no_braces])
@@ -315,11 +324,14 @@ function! vscrib#Substitute(line, ...) abort
         \ )
       if !a:no_inputsave | call inputrestore() | endif
       call add(l:sub_vals, l:input)
+    elseif a:ignore_unrecognized
+      unlet l:vars[l:i]  " don't substitute this one
+      let l:i -= 1  " don't skip the next variable
     else
       throw maktaba#error#NotImplemented(
           \ 'VSCode dynamic variables not yet supported: %s', l:var)
     endif
-  endfor
+  let l:i += 1 | endwhile
 
   let l:line = a:line  " reset to original value
   let l:i = 0 | while l:i <# len(l:vars)

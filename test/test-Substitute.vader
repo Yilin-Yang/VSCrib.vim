@@ -5,7 +5,7 @@ Execute (vscrib#Substitute: Setup):
 
 Execute (vscrib#Substitute: No Substitutions):
   AssertEqual '"foobar": "Bar Foo Bar"', 
-      \ vscrib#Substitute('"foobar": "Bar Foo Bar"', v:true)
+      \ vscrib#Substitute('"foobar": "Bar Foo Bar"', v:false, v:true)
 
 Execute (vscrib#Substitute: VSCode Predefined Variables):
   let g:workspace_basename = 'good_parent'
@@ -35,7 +35,7 @@ Execute (vscrib#Substitute: VSCode Predefined Variables):
       \ }
   for [g:var, g:exp] in items(g:expected)
     AssertEqual '"foobar": "'.g:exp.'"', 
-        \ vscrib#Substitute('"foobar": "${'.g:var.'}"', v:true)
+        \ vscrib#Substitute('"foobar": "${'.g:var.'}"', v:false, v:true)
   endfor
 
 Execute (vscrib#Substitute: Multiple Substitutions Single Line):
@@ -43,17 +43,21 @@ Execute (vscrib#Substitute: Multiple Substitutions Single Line):
       \ vscrib#Substitute('"foobar:" "${fileExtname} ${execPath} ${workspaceFolder}"')
 
 Execute (vscrib#Substitute: Unrecognized Variable):
-  AssertThrows call vscrib#Substitute('"foobar": "${foobar}"', v:true)
+  AssertThrows call vscrib#Substitute('"foobar": "${foobar}"', v:false, v:true)
   AssertEqual 0, match(g:vader_exception, '^ERROR(NotImplemented)'),
       \ 'Threw bad exception: '.g:vader_exception
 
+Execute (vscrib#Substitute: Silently Ignore Unrecognized Variable):
+  AssertEqual '"foobar": "${foobar}"',
+      \ vscrib#Substitute('"foobar": "${foobar}"', v:true, v:true)
+
 Execute (vscrib#Substitute: Prompt for User Input (Non-Interactive)):
-  AssertThrows call vscrib#Substitute('"foobar": "${prompt:Prompt message}"', v:true)
+  AssertThrows call vscrib#Substitute('"foobar": "${prompt:Prompt message}"', v:false, v:true)
   AssertEqual 0, match(g:vader_exception, '^ERROR(BadValue)'),
       \ 'Threw bad exception: '.g:vader_exception
 
 Do (vscrib#Substitute: Prompt for User Input (Interactive)):
-  :let g:actual = vscrib#Substitute('"foobar": "${prompt:Prompt message}"', v:false, v:true)\<CR>
+  :let g:actual = vscrib#Substitute('"foobar": "${prompt:Prompt message}"', v:false, v:false, v:true)\<CR>
   silver on the tree\<CR>
 Then:
   AssertEqual '"foobar": "silver on the tree"', g:actual
