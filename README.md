@@ -54,7 +54,7 @@ Basic Usage
 --------------------------------------------------------------------------------
 VSCrib.vim is a [maktaba-style library plugin](https://github.com/google/vim-maktaba/blob/ffdb1a5a9921f7fd722c84d0f60e166f9916b67d/vroom/libraries.vroom),
 that is, VSCrib.vim does not directly offer any user-facing functionality and is
-meant for exclusive use in other plugins.
+meant for use in other plugins.
 
 The VSCrib.vim interface is accessible through the [VSCrib object.](./autoload/vscrib.vim)
 A call to `function! vscrib#New()` will return a VSCrib object, which:
