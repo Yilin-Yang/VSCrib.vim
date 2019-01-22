@@ -76,7 +76,7 @@ endfunction
 " @throws WrongType
 " @private
 function! vscrib#CheckType(obj) abort
-  if type(a:obj) !=# v:t_dict
+  if type(a:obj) !=# 4  " vim 7.4 compatible v:t_dict type check
       \ || !has_key(a:obj, 'TYPE')
       \ || !has_key(a:obj['TYPE'], 'VSCrib')
     throw maktaba#error#WrongType(
@@ -220,9 +220,7 @@ endfunction
 function! vscrib#GetVariables(...) dict abort
   call vscrib#CheckType(l:self)
   let a:mutable = get(a:000, 0, v:false)
-  if type(a:mutable) !=# v:t_bool && !maktaba#value#IsNumber(a:mutable)
-    throw maktaba#error#WrongType('Did not receive a boolean.')
-  endif
+  call maktaba#ensure#IsIn(a:mutable, [v:true, v:false, 1, 0])
   let l:vscode_vars = l:self['__vars']
   return a:mutable ? l:vscode_vars : deepcopy(l:vscode_vars)
 endfunction
