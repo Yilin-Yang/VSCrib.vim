@@ -192,23 +192,23 @@ endfunction
 " @throws BadValue  If [relative_to] or [vscode_exe] aren't a directory and a file, respectively; or if either is not an absolute filepath.
 function! vscrib#Refresh(...) dict abort
   call vscrib#CheckType(l:self)
-  let a:relative_to = get(a:000, 0, getcwd())
-  call maktaba#ensure#IsDirectory(a:relative_to)
-  call maktaba#ensure#IsAbsolutePath(a:relative_to)
+  let l:relative_to = get(a:000, 0, getcwd())
+  call maktaba#ensure#IsDirectory(l:relative_to)
+  call maktaba#ensure#IsAbsolutePath(l:relative_to)
 
-  let a:vscode_exe = get(a:000, 1, '/NO_VSCODE_EXE_SPECIFIED')
+  let l:vscode_exe = get(a:000, 1, '/NO_VSCODE_EXE_SPECIFIED')
   try
-    call maktaba#ensure#IsFile(a:vscode_exe)
-    call maktaba#ensure#IsAbsolutePath(a:vscode_exe)
+    call maktaba#ensure#IsFile(l:vscode_exe)
+    call maktaba#ensure#IsAbsolutePath(l:vscode_exe)
   catch /ERROR(NotFound)/
     " should be string, but IsFile already invokes IsString
   endtry
 
-  let l:workspace = vscrib#FindWorkspace(a:relative_to)
+  let l:workspace = vscrib#FindWorkspace(l:relative_to)
 
   let l:self['__vars'] = vscrib#VariablesFrom(
-      \ l:workspace, a:relative_to, expand('%:p'), getpos('.'),
-      \ maktaba#buffer#GetVisualSelection(), a:vscode_exe
+      \ l:workspace, l:relative_to, expand('%:p'), getpos('.'),
+      \ maktaba#buffer#GetVisualSelection(), l:vscode_exe
       \ )
 endfunction
 
@@ -219,9 +219,9 @@ endfunction
 " @throws WrongType If [mutable] is not a boolean value.
 function! vscrib#GetVariables(...) dict abort
   call vscrib#CheckType(l:self)
-  let a:mutable = maktaba#ensure#IsBool(get(a:000, 0, 0))
+  let l:mutable = maktaba#ensure#IsBool(get(a:000, 0, 0))
   let l:vscode_vars = l:self['__vars']
-  return a:mutable ? l:vscode_vars : deepcopy(l:vscode_vars)
+  return l:mutable ? l:vscode_vars : deepcopy(l:vscode_vars)
 endfunction
 
 ""
@@ -296,8 +296,8 @@ endfunction
 function! vscrib#GetWorkspaceJSON(filename, ...) dict abort
   call vscrib#CheckType(l:self)
   call maktaba#ensure#IsString(a:filename)
-  let a:workspace = get(a:000, 0, l:self['__vars']['workspaceFolder'])
-  let l:workspace = a:workspace  " mutable 'working copy'
+  let l:initial_workspace = get(a:000, 0, l:self['__vars']['workspaceFolder'])
+  let l:workspace = l:initial_workspace  " mutable 'working copy'
   if empty(l:workspace)
     throw maktaba#error#NotFound('workspaceFolder not set/given!')
   endif
@@ -310,7 +310,7 @@ function! vscrib#GetWorkspaceJSON(filename, ...) dict abort
       throw maktaba#error#NotFound(
           \ 'Could not find working %s searching from: %s',
           \ a:filename,
-          \ a:workspace)
+          \ l:initial_workspace)
     endif
     let l:workspace = maktaba#path#Dirname(l:workspace)
     let l:target_json = l:workspace.'/.vscode/'.a:filename
@@ -369,15 +369,15 @@ endfunction
 " @throws BadValue  If the line contains malformed variables, OR if the line contains unrecognized variables and [ignore_unrecognized] is false, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
 function! vscrib#Substitute(line, ...) dict abort
   call vscrib#CheckType(l:self)
-  let a:variables = l:self['__vars']
-  let a:ignore_unrecognized = get(a:000, 0, 0)
-  let a:no_interactive = get(a:000, 1, 0)
-  let a:no_inputsave = get(a:000, 2, 0)
+  let l:variables = l:self['__vars']
+  let l:ignore_unrecognized = get(a:000, 0, 0)
+  let l:no_interactive = get(a:000, 1, 0)
+  let l:no_inputsave = get(a:000, 2, 0)
   let l:line = maktaba#ensure#IsString(a:line)
 
-  call maktaba#ensure#IsBool(a:ignore_unrecognized)
-  call maktaba#ensure#IsBool(a:no_interactive)
-  call maktaba#ensure#IsBool(a:no_inputsave)
+  call maktaba#ensure#IsBool(l:ignore_unrecognized)
+  call maktaba#ensure#IsBool(l:no_interactive)
+  call maktaba#ensure#IsBool(l:no_inputsave)
 
   let l:vars = []  " list of all variables to substitute
   let l:var = matchstr(l:line, s:var_search_pat) | while !empty(l:var)
@@ -390,25 +390,25 @@ function! vscrib#Substitute(line, ...) dict abort
   let l:i = 0 | while l:i <# len(l:vars)
     let l:var = l:vars[l:i]
     let l:var_no_braces = l:var[2:-2]  " trim ${ and }
-    if has_key(a:variables, l:var_no_braces)
-      call add(l:sub_vals, a:variables[l:var_no_braces])
+    if has_key(l:variables, l:var_no_braces)
+      call add(l:sub_vals, l:variables[l:var_no_braces])
     elseif match(l:var, s:env_search_pat) !=# -1
       let l:env = l:var[matchend(l:var, s:env_search_pat) : -1]
       execute 'call add(l:sub_vals, $'.l:env.')'
     elseif match(l:var, s:prompt_search_pat) !=# -1
-      if a:no_interactive
+      if l:no_interactive
         throw maktaba#error#BadValue(
             \ 'Substitution would prompt for user input: %s', l:var)
       endif
       let l:prompt_msg = l:var[matchend(l:var, s:prompt_search_pat) : -2]
-      if !a:no_inputsave | call inputsave() | endif
+      if !l:no_inputsave | call inputsave() | endif
       let l:input = input(l:prompt_msg.': ',
         \ '',
         \ 'file'
         \ )
-      if !a:no_inputsave | call inputrestore() | endif
+      if !l:no_inputsave | call inputrestore() | endif
       call add(l:sub_vals, l:input)
-    elseif a:ignore_unrecognized
+    elseif l:ignore_unrecognized
       unlet l:vars[l:i]  " don't substitute this one
       let l:i -= 1  " don't skip the next variable
     else
