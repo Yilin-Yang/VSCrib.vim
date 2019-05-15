@@ -5,7 +5,7 @@ Execute (vscrib#Substitute: Setup):
   call g:vscrib.Refresh()
 
 Execute (vscrib#Substitute: No Substitutions):
-  AssertEqual '"foobar": "Bar Foo Bar"', 
+  AssertEqual '"foobar": "Bar Foo Bar"',
       \ g:vscrib.Substitute('"foobar": "Bar Foo Bar"', 0, 1)
 
 Execute (vscrib#Substitute: VSCode Predefined Variables):
@@ -35,7 +35,7 @@ Execute (vscrib#Substitute: VSCode Predefined Variables):
       \ 'execPath': g:vscode,
       \ }
   for [g:var, g:exp] in items(g:expected)
-    AssertEqual '"foobar": "'.g:exp.'"', 
+    AssertEqual '"foobar": "'.g:exp.'"',
         \ g:vscrib.Substitute('"foobar": "${'.g:var.'}"', 0, 1)
   endfor
 

@@ -8,7 +8,7 @@
 "
 " The primary purpose of this plugin is to locate `.vscode` folders and the
 " JSON configuration files held within. This allows for a limited degree of
-" 'letting vim pretend to be VSCode' for the purposes of writing plugins.
+" "letting vim pretend to be VSCode" for the purposes of writing plugins.
 
 let s:vscode_variables = {
     \ 'workspaceFolder': '',
@@ -34,15 +34,15 @@ let s:vscode_variables = {
 " plugins using VSCrib at the same time.
 "
 " If VSCrib.vim had a *single* global state (of workspace variables, etc.), then
-" that state could be clobbered by calls to @function(SetVariables) made by
+" that state could be clobbered by calls to @function(Refresh) made by
 " other plugins; e.g. if one plugin wants to update the active workspace only
 " when the user `cd`s into another directory, while another wants to update
 " whenever the user opens a new file, then one plugin could overwrite the
-" shared workspace state 'while the other wasn't looking.'
+" shared workspace state "while the other wasn"t looking.'
 "
-" To avoid this, VSCrib.vim's interface is tied to a VSCrib OBJECT: the
+" To avoid this, VSCrib.vim's interface is tied to a VSCrib object: the
 " "state" of the workspace is fully contained by this object. So the two
-" plugins mentioned above would have two DIFFERENT objects, with two
+" plugins mentioned above would have two different objects, with two
 " independently modifiable states, and neither would have to consider the
 " other's existence.
 
@@ -78,7 +78,7 @@ endfunction
 function! vscrib#CheckType(obj) abort
   if type(a:obj) !=# 4  " vim 7.4 compatible v:t_dict type check
       \ || !has_key(a:obj, 'TYPE')
-      \ || !has_key(a:obj['TYPE'], 'VSCrib')
+      \ || !has_key(a:obj.TYPE, 'VSCrib')
     throw maktaba#error#WrongType(
         \ 'self object isn''t a VSCrib: %s', s:StrDump(a:obj))
   endif
@@ -206,7 +206,7 @@ function! vscrib#Refresh(...) dict abort
 
   let l:workspace = vscrib#FindWorkspace(l:relative_to)
 
-  let l:self['__vars'] = vscrib#VariablesFrom(
+  let l:self.__vars = vscrib#VariablesFrom(
       \ l:workspace, l:relative_to, expand('%:p'), getpos('.'),
       \ maktaba#buffer#GetVisualSelection(), l:vscode_exe
       \ )
@@ -220,7 +220,7 @@ endfunction
 function! vscrib#GetVariables(...) dict abort
   call vscrib#CheckType(l:self)
   let l:mutable = maktaba#ensure#IsBool(get(a:000, 0, 0))
-  let l:vscode_vars = l:self['__vars']
+  let l:vscode_vars = l:self.__vars
   return l:mutable ? l:vscode_vars : deepcopy(l:vscode_vars)
 endfunction
 
@@ -281,7 +281,7 @@ endfunction
 ""
 " @dict VSCrib
 " Return the nearest JSON file with named {filename} that can be found in a
-" `.vscode` directory, parsed into a dictionary, searching from the cached
+" `.vscode` directory, parsed into a |dict|, searching from the cached
 " workspace folder, e.g. if {filename} is 'launch.json', search for
 " `.vscode/launch.json` in the current workspace directory or in its parent
 " directories.
@@ -296,7 +296,7 @@ endfunction
 function! vscrib#GetWorkspaceJSON(filename, ...) dict abort
   call vscrib#CheckType(l:self)
   call maktaba#ensure#IsString(a:filename)
-  let l:initial_workspace = get(a:000, 0, l:self['__vars']['workspaceFolder'])
+  let l:initial_workspace = get(a:000, 0, l:self.__vars.workspaceFolder)
   let l:workspace = l:initial_workspace  " mutable 'working copy'
   if empty(l:workspace)
     throw maktaba#error#NotFound('workspaceFolder not set/given!')
@@ -347,8 +347,9 @@ endfunction
 "
 " As of the time of writing, this function does NOT support substitution of
 " VSCode settings and commands, e.g. `${config:editor.fontSize}` or
-" `${command.explorer.newFolder}`. Attempted substitution of these variables
-" will produce errors, unless [ignore_unrecognized] is true.
+" `${command.explorer.newFolder}`, except in a limited capacity explained
+" below. Attempted substitution of these variables will produce errors, unless
+" [ignore_unrecognized] is true.
 "
 " VSCode normally offers "input" variables (see: https://code.visualstudio.com/docs/editor/variables-reference)
 " that allow tasks and launch configurations to prompt for user input, e.g.
@@ -369,7 +370,7 @@ endfunction
 " @throws BadValue  If the line contains malformed variables, OR if the line contains unrecognized variables and [ignore_unrecognized] is false, OR if [no_interactive] is set to true and dynamic variables that prompt for user input are in the string, OR if the given line contains newline characters or carriage returns.
 function! vscrib#Substitute(line, ...) dict abort
   call vscrib#CheckType(l:self)
-  let l:variables = l:self['__vars']
+  let l:variables = l:self.__vars
   let l:ignore_unrecognized = get(a:000, 0, 0)
   let l:no_interactive = get(a:000, 1, 0)
   let l:no_inputsave = get(a:000, 2, 0)

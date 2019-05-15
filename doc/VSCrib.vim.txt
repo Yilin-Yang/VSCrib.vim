@@ -14,8 +14,8 @@ A VimL library for for cribbing project infrastructure used by VSCode and
 twisting it to one's own nefarious ends.
 
 The primary purpose of this plugin is to locate `.vscode` folders and the JSON
-configuration files held within. This allows for a limited degree of 'letting
-vim pretend to be VSCode' for the purposes of writing plugins.
+configuration files held within. This allows for a limited degree of "letting
+vim pretend to be VSCode" for the purposes of writing plugins.
 
 ==============================================================================
 DICTIONARIES                                                *VSCrib.vim-dicts*
@@ -28,15 +28,15 @@ is meant to prevent concurrency issues arising from multiple plugins using
 VSCrib at the same time.
 
 If VSCrib.vim had a *single* global state (of workspace variables, etc.), then
-that state could be clobbered by calls to |SetVariables()| made by other
-plugins; e.g. if one plugin wants to update the active workspace only when the
-user `cd`s into another directory, while another wants to update whenever the
-user opens a new file, then one plugin could overwrite the shared workspace
-state 'while the other wasn't looking.'
+that state could be clobbered by calls to |Refresh()| made by other plugins;
+e.g. if one plugin wants to update the active workspace only when the user
+`cd`s into another directory, while another wants to update whenever the user
+opens a new file, then one plugin could overwrite the shared workspace state
+"while the other wasn"t looking.'
 
-To avoid this, VSCrib.vim's interface is tied to a VSCrib OBJECT: the "state"
+To avoid this, VSCrib.vim's interface is tied to a VSCrib object: the "state"
 of the workspace is fully contained by this object. So the two plugins
-mentioned above would have two DIFFERENT objects, with two independently
+mentioned above would have two different objects, with two independently
 modifiable states, and neither would have to consider the other's existence.
 
 VSCrib.FindWorkspace({search_from})                   *VSCrib.FindWorkspace()*
@@ -72,7 +72,7 @@ VSCrib.GetVariables([mutable])                         *VSCrib.GetVariables()*
 VSCrib.GetWorkspaceJSON({filename}, [workspace_folder])
                                                    *VSCrib.GetWorkspaceJSON()*
   Return the nearest JSON file with named {filename} that can be found in a
-  `.vscode` directory, parsed into a dictionary, searching from the cached
+  `.vscode` directory, parsed into a |dict|, searching from the cached
   workspace folder, e.g. if {filename} is 'launch.json', search for
   `.vscode/launch.json` in the current workspace directory or in its parent
   directories.
@@ -94,8 +94,9 @@ VSCrib.Substitute({line}, [ignore_unrecognized], [no_interactive],
 
   As of the time of writing, this function does NOT support substitution of
   VSCode settings and commands, e.g. `${config:editor.fontSize}` or
-  `${command.explorer.newFolder}`. Attempted substitution of these variables
-  will produce errors, unless [ignore_unrecognized] is true.
+  `${command.explorer.newFolder}`, except in a limited capacity explained
+  below. Attempted substitution of these variables will produce errors, unless
+  [ignore_unrecognized] is true.
 
   VSCode normally offers "input" variables (see:
   https://code.visualstudio.com/docs/editor/variables-reference) that allow
@@ -110,9 +111,9 @@ VSCrib.Substitute({line}, [ignore_unrecognized], [no_interactive],
   to true. This is useful when automatically supplying answers to interactive
   user prompts, e.g. when writing test cases for this function.
 
-  [ignore_unrecognized] is v:true if omitted.
-  [no_interactive] is v:false if omitted.
-  [no_inputsave] is v:false if omitted.
+  [ignore_unrecognized] is 1 if omitted.
+  [no_interactive] is 0 if omitted.
+  [no_inputsave] is 0 if omitted.
   Throws ERROR(WrongType) If {line} is not a string.
   Throws ERROR(BadValue) If the line contains malformed variables, OR if the
   line contains unrecognized variables and [ignore_unrecognized] is false, OR
